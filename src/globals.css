@@ -1,0 +1,72 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light, boosttoad --default;
+}
+@plugin "daisyui/theme" {
+  name: "boosttoad";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(98% 0.02 140); /* soft lily pad green */
+  --color-base-200: oklch(95% 0.03 140);
+  --color-base-300: oklch(91% 0.04 140);
+  --color-base-content: oklch(25% 0.05 140); /* muted green-gray text */
+
+  --color-primary: oklch(60% 0.28 150); /* vibrant froggy green */
+  --color-primary-content: oklch(98% 0.01 150); /* white on green */
+
+  --color-secondary: oklch(70% 0.25 330); /* fun rocket pink */
+  --color-secondary-content: oklch(98% 0.01 330);
+
+  --color-accent: oklch(65% 0.3 270); /* retro gadget purple */
+  --color-accent-content: oklch(98% 0.01 270);
+
+  --color-neutral: oklch(30% 0.02 180); /* deep pondy teal */
+  --color-neutral-content: oklch(98% 0.01 180);
+
+  --color-info: oklch(70% 0.2 210); /* clear sky blue */
+  --color-info-content: oklch(98% 0.01 210);
+
+  --color-success: oklch(62% 0.25 120); /* success leaf green */
+  --color-success-content: oklch(98% 0.01 120);
+
+  --color-warning: oklch(85% 0.3 90); /* warning yolk yellow */
+  --color-warning-content: oklch(30% 0.05 90);
+
+  --color-error: oklch(60% 0.3 30); /* burnt orange error */
+  --color-error-content: oklch(98% 0.01 30);
+
+  /* Border radius */
+  --radius-selector: 1rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+
+  /* Base sizes */
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  /* Border size */
+  --border: 1px;
+
+  /* Effects */
+  --depth: 2;
+  --noise: 0.01;
+}
+
+.font-sans {
+  font-family: var(--font-custom, "sans-serif");
+}
+
+.font-mono {
+  font-family: var(--font-custom2, "monospace");
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-custom2, "sans-serif");
+}

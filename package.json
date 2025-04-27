@@ -1,0 +1,48 @@
+{
+  "name": "idea-fe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "tsc:check": "tsc --noEmit",
+    "tsc:watch": "tsc --noEmit --watch"
+  },
+  "dependencies": {
+    "@stripe/stripe-js": "^7.1.0",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "@tanstack/react-query": "^5.67.3",
+    "axios": "^1.8.3",
+    "dhtmlx-gantt": "^9.0.9",
+    "framer-motion": "^12.9.1",
+    "micro": "^10.0.1",
+    "next": "15.2.2",
+    "openai": "^4.93.0",
+    "posthog-js": "^1.236.3",
+    "posthog-node": "^4.12.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
+    "resend": "^4.1.2",
+    "stripe": "^18.0.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@tanstack/eslint-plugin-query": "^5.67.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "daisyui": "^5.0.3",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
