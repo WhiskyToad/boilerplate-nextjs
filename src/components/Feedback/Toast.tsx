@@ -6,13 +6,15 @@ import React, {
   useCallback,
 } from "react";
 import { FiX, FiCheck, FiInfo, FiAlertTriangle } from "react-icons/fi";
+import { registerToastHandlers } from "@/utils/toastHelpers";
 
-type ToastType = "success" | "error" | "info" | "warning";
+// Export this type so it can be used by other components
+export type ToastType = "success" | "error" | "info" | "warning";
 
 interface Toast {
   id: string;
   type: ToastType;
-  message: string;
+  message: string | React.ReactNode; // Update to support ReactNode
   duration?: number;
 }
 
@@ -60,6 +62,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
+
+  // Register toast handlers for use outside of React components
+  useEffect(() => {
+    registerToastHandlers({ addToast, removeToast });
+  }, [addToast, removeToast]);
 
   const positionClasses = {
     "top-right": "top-4 right-4",

@@ -7,7 +7,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Head from "next/head";
 import { useAuth } from "@/features/auth/useAuth";
-import { Toaster } from "react-hot-toast";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import posthog from "posthog-js";
@@ -15,6 +14,7 @@ import { PostHogProvider } from "posthog-js/react";
 import { getFontClassNames } from "@/config/fonts";
 import ConfigLoader from "@/components/ConfigLoader";
 import getSiteConfig from "@/utils/siteConfig";
+import { ToastProvider } from "@/components/Feedback/Toast";
 
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -93,89 +93,83 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   // Use the layout defined at the page level, if available
   const getLayout = Component.getLayout ?? ((page) => page);
 
-  const AppContent = (
-    <Providers>
-      <Head>
-        <title>{`${siteTitle}: ${siteDescription}`}</title>
-        <meta name="description" content={siteDescription} />
-        <meta name="keywords" content={siteKeywords} />
-        <meta name="author" content={companyName} />
+  // Build the head content
+  const headContent = (
+    <Head>
+      <title>{`${siteTitle}: ${siteDescription}`}</title>
+      <meta name="description" content={siteDescription} />
+      <meta name="keywords" content={siteKeywords} />
+      <meta name="author" content={companyName} />
 
-        {/* Add favicon and app icons - uncomment and update as needed */}
-        {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
-        {/* <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> */}
-        {/* <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" /> */}
-        {/* <link rel="apple-touch-icon" href="/apple-touch-icon.png" /> */}
-        {/* <link rel="manifest" href="/site.webmanifest" /> */}
-        <meta name="theme-color" content="#ffffff" />
+      {/* Add favicon and app icons - uncomment and update as needed */}
+      {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
+      {/* <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> */}
+      {/* <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" /> */}
+      {/* <link rel="apple-touch-icon" href="/apple-touch-icon.png" /> */}
+      {/* <link rel="manifest" href="/site.webmanifest" /> */}
+      <meta name="theme-color" content="#ffffff" />
 
-        {/* Open Graph tags for social sharing */}
-        <meta
-          property="og:title"
-          content={`${siteTitle}: ${siteDescription}`}
-        />
-        <meta property="og:description" content={siteDescription} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={domain} />
-        <meta
-          property="og:image"
-          content={`${domain}${config.get(
-            "site.socialImages.ogImage",
-            "/og-image.png"
-          )}`}
-        />
+      {/* Open Graph tags for social sharing */}
+      <meta property="og:title" content={`${siteTitle}: ${siteDescription}`} />
+      <meta property="og:description" content={siteDescription} />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content={domain} />
+      <meta
+        property="og:image"
+        content={`${domain}${config.get(
+          "site.socialImages.ogImage",
+          "/og-image.png"
+        )}`}
+      />
 
-        {/* Twitter Card tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={siteTitle} />
-        <meta name="twitter:description" content={siteDescription} />
-        <meta
-          name="twitter:image"
-          content={`${domain}${config.get(
-            "site.socialImages.twitterCard",
-            "/twitter-card.png"
-          )}`}
-        />
-      </Head>
-      <div className={getFontClassNames()}>
-        <Header logo={<></>} />
-        <main className="min-w-full min-h-screen px-2">
-          {getLayout(<Component {...pageProps} />)}
-          <Toaster
-            position="bottom-center"
-            reverseOrder={false}
-            gutter={8}
-            containerClassName=""
-            containerStyle={{}}
-            toastOptions={{
-              // Global toast options
-              duration: 5000,
-              style: {
-                borderRadius: "0.5rem",
-                padding: "1rem",
-                maxWidth: "500px",
-              },
-              // Custom styles for different toast types
-              success: {
-                duration: 3000,
-              },
-              error: {
-                duration: 5000,
-              },
-            }}
-          />
-        </main>
-        <Footer />
-      </div>
-    </Providers>
+      {/* Twitter Card tags */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={siteTitle} />
+      <meta name="twitter:description" content={siteDescription} />
+      <meta
+        name="twitter:image"
+        content={`${domain}${config.get(
+          "site.socialImages.twitterCard",
+          "/twitter-card.png"
+        )}`}
+      />
+    </Head>
   );
 
+  // Create properly structured app content with providers
   return (
     <ConfigLoader>
+      {/* First layer - Analytics provider (optional) */}
       {isPostHogAvailable ? (
-        <PostHogProvider client={posthog}>{AppContent}</PostHogProvider>
+        <PostHogProvider client={posthog}>
+          {/* Second layer - Toast provider (always available) */}
+          <ToastProvider position="bottom-center" autoCloseTime={5000}>
+            {/* Third layer - App providers */}
+            <Providers>
+              {headContent}
+              <div className={getFontClassNames()}>
+                <Header logo={<></>} />
+                <main className="min-w-full min-h-screen px-2">
+                  {getLayout(<Component {...pageProps} />)}
+                </main>
+                <Footer />
+              </div>
+            </Providers>
+          </ToastProvider>
+        </PostHogProvider>
       ) : (
-        AppContent
+        <ToastProvider position="bottom-center" autoCloseTime={5000}>
+          <Providers>
+            {headContent}
+            <div className={getFontClassNames()}>
+              <Header logo={<></>} />
+              <main className="min-w-full min-h-screen px-2">
+                {getLayout(<Component {...pageProps} />)}
+              </main>
+              <Footer />
+            </div>
+          </Providers>
+        </ToastProvider>
       )}
     </ConfigLoader>
   );

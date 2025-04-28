@@ -2,8 +2,36 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { toast } from "react-hot-toast";
 import { queryClient } from "@/features/utils/queryClient"; // Import the singleton queryClient
+import { useToast } from "@/components/Feedback/Toast";
+
+// Import the proper Toast type from your Toast component
+import type { ToastType } from "@/components/Feedback/Toast";
+
+// Define a type that matches exactly what the Toast component expects
+type ToastPayload = {
+  type: ToastType;
+  message: string; // Changed to string only to match Toast component
+  duration?: number;
+};
+
+// Create a global reference for toast functions
+const globalToastHandler: {
+  addToast?: (toast: ToastPayload) => void;
+} = {};
+
+// Export a function to show toasts from anywhere - with corrected types
+export const showGlobalToast = (
+  type: ToastType,
+  message: string, // Changed to string only to match Toast component
+  duration?: number
+) => {
+  if (globalToastHandler.addToast) {
+    globalToastHandler.addToast({ type, message, duration });
+  } else {
+    console.warn("Toast handler not registered yet. Toast message:", message);
+  }
+};
 
 // Global fetch interceptor for OpenAI API calls
 const setupFetchInterceptor = () => {
@@ -25,19 +53,17 @@ const setupFetchInterceptor = () => {
         const data = await clonedResponse.json();
 
         if (data.showToast && data.error) {
-          // Show toast error notification
-          toast.error(
-            <div>
-              <p className="font-bold">AI Service Error</p>
-              <p className="text-sm">{data.error}</p>
-              <p className="text-xs mt-1 opacity-80">Please try again</p>
-            </div>,
-            { duration: 5000 }
-          );
+          // Use the global toast handler instead of the hook - with correct type
+          // Convert any ReactNode to string if needed
+          const errorMessage =
+            typeof data.error === "object"
+              ? "AI Service Error"
+              : String(data.error || "AI Service Error");
+
+          showGlobalToast("error", errorMessage);
         }
-      } catch (e) {
-        // In case response is not JSON
-        console.error("Error parsing API error response:", e);
+      } catch (error) {
+        console.error("Failed to parse API error response", error);
       }
     }
 
@@ -46,6 +72,22 @@ const setupFetchInterceptor = () => {
 };
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
+  // Get access to toast functions using the hook (inside component context)
+  const toast = useToast();
+
+  // Register the toast functions when the component mounts
+  useEffect(() => {
+    if (toast?.addToast) {
+      // No type error should occur now with the fixed types
+      globalToastHandler.addToast = toast.addToast;
+    }
+
+    return () => {
+      // Cleanup on unmount
+      delete globalToastHandler.addToast;
+    };
+  }, [toast]);
+
   // Setup fetch interceptor on client side only
   useEffect(() => {
     setupFetchInterceptor();
