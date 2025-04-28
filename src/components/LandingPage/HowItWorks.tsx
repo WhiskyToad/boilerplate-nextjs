@@ -1,27 +1,41 @@
 import React from "react";
 import { FiEdit, FiList, FiSend } from "react-icons/fi";
 
-const HowItWorks: React.FC = () => {
-  const steps = [
+interface HowItWorksProps {
+  title?: string;
+  steps?: Array<{
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  }>;
+}
+
+const HowItWorks: React.FC<HowItWorksProps> = ({
+  title = "How It Works",
+  steps: propSteps,
+}) => {
+  const defaultSteps = [
     {
       icon: <FiEdit className="text-4xl text-primary" />,
-      title: "1. Capture Your Idea",
+      title: "1. First Step",
       description:
-        "Fill out a short form about your startup concept. Our AI instantly generates a tailored blueprint preview, including Lean Canvas and potential features.",
+        "Describe the first step of your process. Explain what users need to do to get started with your product.",
     },
     {
       icon: <FiList className="text-4xl text-primary" />,
-      title: "2. Plan Your MVP",
+      title: "2. Second Step",
       description:
-        "Review AI-suggested features, prioritize using our value vs. complexity matrix, and select the core elements for your Minimum Viable Product. See effort estimates update in real-time.",
+        "Describe the second step of your process. Explain how users can get the most out of your product features.",
     },
     {
       icon: <FiSend className="text-4xl text-primary" />,
-      title: "3. Launch with Confidence",
+      title: "3. Final Step",
       description:
-        "Utilize our step-by-step launch checklists, access helpful templates (like pitch decks), and follow guided marketing steps to get your product to market.",
+        "Describe the final step of your process. Explain how users can achieve their goals with your product.",
     },
   ];
+
+  const steps = propSteps || defaultSteps;
 
   return (
     <section
@@ -30,9 +44,7 @@ const HowItWorks: React.FC = () => {
     >
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-center mb-16">
-          <span className="border-b-4 border-primary pb-2">
-            How Boost Toad Works (in 3 Steps)
-          </span>
+          <span className="border-b-4 border-primary pb-2">{title}</span>
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">

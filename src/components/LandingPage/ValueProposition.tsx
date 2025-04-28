@@ -2,27 +2,37 @@ import React from "react";
 import { FiZap, FiTool } from "react-icons/fi"; // Example icons
 import { BsKanban } from "react-icons/bs"; // Import a Kanban-related icon
 
-const ValueProposition: React.FC = () => {
-  const features = [
+interface ValuePropositionProps {
+  features?: Array<{
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  }>;
+}
+
+const ValueProposition: React.FC<ValuePropositionProps> = ({
+  features: propFeatures,
+}) => {
+  const defaultFeatures = [
     {
       icon: <FiZap className="w-10 h-10 text-primary" />,
-      title: "AI-Powered Blueprints",
-      description:
-        "Use Lean Canvas to generate your MVP business plan in 60 seconds.",
+      title: "Feature One",
+      description: "Describe your first key feature or value proposition here.",
     },
     {
       icon: <FiTool className="w-10 h-10 text-primary" />,
-      title: "MVP Feature Planner",
+      title: "Feature Two",
       description:
-        "Quickly define user stories and prioritize features using complexity scoring for your MVP.",
+        "Describe your second key feature or value proposition here.",
     },
     {
-      icon: <BsKanban className="w-10 h-10 text-primary" />, // Changed icon
-      title: "Kanban Board",
-      description:
-        "Use our Kanban board to track your progress, and do the right things at the right time.",
+      icon: <BsKanban className="w-10 h-10 text-primary" />,
+      title: "Feature Three",
+      description: "Describe your third key feature or value proposition here.",
     },
   ];
+
+  const features = propFeatures || defaultFeatures;
 
   return (
     <section className="py-16 bg-base-200">

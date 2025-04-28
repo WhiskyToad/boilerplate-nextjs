@@ -4,7 +4,6 @@ import type { AppProps } from "next/app";
 import Providers from "@/utils/Providers";
 import "../globals.css";
 import Header from "@/components/Header";
-import { Jost, Outfit } from "next/font/google";
 import Footer from "@/components/Footer";
 import Head from "next/head";
 import { useAuth } from "@/features/auth/useAuth";
@@ -13,13 +12,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-
-const font = Jost({ subsets: ["latin"], variable: "--font-custom" });
-const font2 = Outfit({
-  subsets: ["latin"],
-  variable: "--font-custom2",
-  weight: "600",
-});
+import { getFontClassNames } from "@/config/fonts";
 
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -132,8 +125,8 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
           content="https://boosttoad.com/twitter-card.png"
         />
       </Head>
-      <div className={`${font.variable} ${font2.variable} font-sans`}>
-        <Header />
+      <div className={getFontClassNames()}>
+        <Header logo={<></>} />
         <main className="min-w-full min-h-screen px-2">
           {getLayout(<Component {...pageProps} />)}
           <Toaster

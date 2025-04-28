@@ -1,14 +1,25 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, ReactNode } from "react";
 
-interface InfiniteScrollProps<T> {
+export interface InfiniteScrollProps<T> {
   data: T[];
   isLoading: boolean;
   onLoadMore: () => void;
-  renderItem: (item: T) => React.ReactNode;
-  emptyMessage?: string;
+  renderItem: (item: T, index: number) => React.ReactNode;
+  emptyMessage?: string | ReactNode;
   hasNextPage: boolean;
+  loadingIndicator?: ReactNode;
+  className?: string;
+  itemClassName?: string;
+  emptyClassName?: string;
+  loadingClassName?: string;
+  threshold?: number;
+  offset?: number;
+  keyExtractor?: (item: T, index: number) => string | number;
 }
 
+/**
+ * InfiniteScroll component that automatically loads more data when the user scrolls to the bottom
+ */
 const InfiniteScroll = <T,>({
   data,
   isLoading,
@@ -16,6 +27,14 @@ const InfiniteScroll = <T,>({
   renderItem,
   emptyMessage = "No items found.",
   hasNextPage,
+  loadingIndicator,
+  className = "flex flex-col gap-4",
+  itemClassName = "",
+  emptyClassName = "text-center text-primary-500",
+  loadingClassName = "flex justify-center items-center h-52",
+  threshold = 1.0,
+  offset = 3,
+  keyExtractor,
 }: InfiniteScrollProps<T>) => {
   const observer = useRef<IntersectionObserver | null>(null);
 
@@ -35,34 +54,38 @@ const InfiniteScroll = <T,>({
             handleLoadMore();
           }
         },
-        { threshold: 1.0 }
+        { threshold }
       );
       if (node) observer.current.observe(node);
     },
-    [isLoading, handleLoadMore]
+    [isLoading, handleLoadMore, threshold]
   );
 
   if (isLoading && !data.length) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Loading...
-      </div>
+      <div className={loadingClassName}>{loadingIndicator || "Loading..."}</div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={className}>
       {data.length > 0 ? (
         data.map((item, index) => (
           <div
-            key={index}
-            ref={index === data.length - 3 ? lastElementRef : undefined}
+            key={keyExtractor ? keyExtractor(item, index) : index}
+            ref={index === data.length - offset ? lastElementRef : undefined}
+            className={itemClassName}
           >
-            {renderItem(item)}
+            {renderItem(item, index)}
           </div>
         ))
       ) : (
-        <div className="text-center text-primary-500">{emptyMessage}</div>
+        <div className={emptyClassName}>{emptyMessage}</div>
+      )}
+      {isLoading && data.length > 0 && (
+        <div className={loadingClassName}>
+          {loadingIndicator || "Loading more..."}
+        </div>
       )}
     </div>
   );

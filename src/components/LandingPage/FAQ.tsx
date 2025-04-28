@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import { FiPlus, FiMinus } from "react-icons/fi";
 
+interface FAQItem {
+  question: string;
+  answer: React.ReactNode;
+}
+
+interface FAQProps {
+  title?: string;
+  faqs?: FAQItem[];
+  defaultOpenIndex?: number;
+}
+
 interface FAQItemProps {
   question: string;
   answer: React.ReactNode;
@@ -8,7 +19,7 @@ interface FAQItemProps {
   onClick: () => void;
 }
 
-const FAQItem: React.FC<FAQItemProps> = ({
+const FAQItemComponent: React.FC<FAQItemProps> = ({
   question,
   answer,
   isOpen,
@@ -38,90 +49,88 @@ const FAQItem: React.FC<FAQItemProps> = ({
   );
 };
 
-const FAQ: React.FC = () => {
-  const [openIndex, setOpenIndex] = useState<number>(0);
+const FAQ: React.FC<FAQProps> = ({
+  title = "Frequently Asked Questions",
+  faqs: propFaqs,
+  defaultOpenIndex = 0,
+}) => {
+  const [openIndex, setOpenIndex] = useState<number>(defaultOpenIndex);
 
-  const faqs = [
+  const defaultFaqs = [
     {
-      question: "Do I need to be technical to use Boost Toad?",
+      question: "What services do you offer?",
       answer: (
         <p>
-          Absolutely not! Boost Toad is designed for founders, product managers,
-          and entrepreneurs, regardless of coding ability. Our AI handles the
-          technical suggestions, presenting them in clear, actionable steps. You
-          focus on the strategy, we help with the structure.
+          We offer a comprehensive suite of services designed to meet your
+          needs. Our core offerings include [Service 1], [Service 2], and
+          [Service 3], all designed to help you achieve your goals efficiently.
         </p>
       ),
     },
     {
-      question: "How is this different from standard project management tools?",
+      question: "How much does it cost?",
       answer: (
         <p>
-          While tools like Jira or Trello help manage tasks, Boost Toad helps
-          you *define* the right tasks in the first place. We start with your
-          core idea and use AI to generate the strategic blueprint (Lean Canvas,
-          features, roadmap) *before* you get to task management, ensuring you
-          build what matters.
+          We offer flexible pricing plans to meet different needs and budgets.
+          Our plans start at $X per month, with options to upgrade as your needs
+          grow. Check our pricing page for detailed information on each plan's
+          features.
         </p>
       ),
     },
     {
-      question: "What if I already have an MVP or existing product?",
+      question: "Do you offer a free trial?",
       answer: (
         <p>
-          Boost Toad is still valuable! You can use our platform to refine your
-          existing strategy, plan your next feature releases using the
-          prioritization matrix, or utilize the Launch Pack resources
-          (checklists, templates) to optimize your go-to-market approach and
-          monetization.
+          Yes! We offer a X-day free trial with no credit card required. This
+          gives you full access to explore our platform and see how it can
+          benefit your workflow before making a commitment.
         </p>
       ),
     },
     {
-      question: "Is my startup idea safe and confidential?",
+      question: "How secure is your platform?",
       answer: (
         <p>
-          Yes. Your data privacy is paramount. We do not share your project
-          details or personal information with third parties. Our infrastructure
-          is secure, and we are committed to GDPR compliance. Think of us as
-          your confidential AI co-founder.
+          Security is our top priority. We implement industry-standard security
+          measures including encryption, secure data storage, and regular
+          security audits. All user data is protected according to best
+          practices and compliance requirements.
         </p>
       ),
     },
     {
-      question: "What kind of 'Launch Pack' resources are included?",
+      question: "What kind of support do you offer?",
       answer: (
         <p>
-          Our Launch Pack includes step-by-step checklists for pre-launch,
-          launch day, and post-launch activities. It also provides access to
-          curated templates for things like pitch decks, press releases, and
-          essential legal boilerplate documents (e.g., Privacy Policy, Terms of
-          Service starting points).
+          We provide comprehensive support through various channels including
+          email, live chat, and knowledge base articles. Premium plans include
+          priority support with faster response times and dedicated support
+          specialists.
         </p>
       ),
     },
     {
-      question: "Can I export my blueprint and roadmap?",
+      question: "Can I cancel my subscription?",
       answer: (
         <p>
-          Yes, you can export key elements like your Lean Canvas and feature
-          list. We are continuously working on adding more export options for
-          seamless integration with other tools or for sharing with
-          stakeholders.
+          Yes, you can cancel your subscription at any time. There are no
+          long-term contracts or cancellation fees. Your subscription will
+          remain active until the end of your current billing period.
         </p>
       ),
     },
   ];
 
+  const faqs = propFaqs || defaultFaqs;
+
   return (
     <section className="py-16 bg-base-100">
       <div className="container mx-auto px-4 max-w-4xl">
-        <h2 className="text-3xl font-bold text-center mb-12">
-          Frequently Asked Questions
-        </h2>
+        <h2 className="text-3xl font-bold text-center mb-12">{title}</h2>
         <div className="bg-base-100 rounded-lg shadow-lg border border-base-200">
           {faqs.map((faq, index) => (
-            <FAQItem
+            <FAQItemComponent
               key={index}
               question={faq.question}
               answer={faq.answer}

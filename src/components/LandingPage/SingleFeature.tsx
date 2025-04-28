@@ -9,7 +9,8 @@ interface SingleFeatureProps {
   imageUrl: string;
   reverse?: boolean;
   variant?: "primary" | "secondary" | "tertiary" | "gray";
-  onCtaClick?: () => void; // Add this prop
+  onCtaClick?: () => void;
+  imageAlt?: string;
 }
 
 const SingleFeature: React.FC<SingleFeatureProps> = ({
@@ -18,9 +19,10 @@ const SingleFeature: React.FC<SingleFeatureProps> = ({
   ctaText,
   ctaLink,
   imageUrl,
+  imageAlt,
   reverse = false,
   variant = "tertiary",
-  onCtaClick, // Destructure prop
+  onCtaClick,
 }) => {
   const getButtonClassNames = React.useMemo(() => {
     return (
@@ -30,8 +32,7 @@ const SingleFeature: React.FC<SingleFeatureProps> = ({
       switch (variant) {
         case "primary":
         case "gray":
-          return `${baseClass} btn-secondary
-          `;
+          return `${baseClass} btn-secondary`;
         case "secondary":
           return `${baseClass} btn-primary`;
         case "tertiary":
@@ -69,7 +70,7 @@ const SingleFeature: React.FC<SingleFeatureProps> = ({
           <a href={ctaLink}>
             <button
               className={getButtonClassNames(variant)}
-              onClick={onCtaClick} // Call the handler
+              onClick={onCtaClick}
             >
               {ctaText}
             </button>
@@ -81,7 +82,7 @@ const SingleFeature: React.FC<SingleFeatureProps> = ({
           <div className="flex justify-center bg-base-200">
             <Image
               src={imageUrl}
-              alt={title}
+              alt={imageAlt || title}
               layout="responsive"
               width={460}
               height={475}

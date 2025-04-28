@@ -1,3 +1,4 @@
+import React from "react";
 import {
   FaSearchDollar,
   FaLightbulb,
@@ -5,41 +6,53 @@ import {
   FaRocket,
 } from "react-icons/fa";
 
-const Features: React.FC = () => {
-  const features = [
+interface FeaturesProps {
+  title?: string;
+  features?: Array<{
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  }>;
+}
+
+const Features: React.FC<FeaturesProps> = ({
+  title = "Powerful Features",
+  features: propFeatures,
+}) => {
+  const defaultFeatures = [
     {
       icon: <FaSearchDollar className="w-8 h-8 text-primary" />,
-      title: "AI-Powered Idea Validation",
+      title: "Feature One",
       description:
-        "Score and analyze your business ideas with AI-driven validation tools. Assess market demand, competition, technical feasibility, and virality potential before investing time and resources.",
+        "Describe your first feature in detail. Explain the benefits and how it helps solve your customers' problems.",
     },
     {
       icon: <FaLightbulb className="w-8 h-8 text-primary" />,
-      title: "Roadmap & Execution Planning",
+      title: "Feature Two",
       description:
-        "Turn ideas into actionable plans. Use interactive roadmaps, milestone tracking, and AI-powered suggestions to build a structured path from concept to launch.",
+        "Describe your second feature in detail. Explain the benefits and how it helps solve your customers' problems.",
     },
     {
       icon: <FaChartLine className="w-8 h-8 text-primary" />,
-      title: "Automated Marketing Strategy",
+      title: "Feature Three",
       description:
-        "Generate tailored marketing plans with AI. Get content suggestions, social media strategies, and audience targeting insights to build traction efficiently.",
+        "Describe your third feature in detail. Explain the benefits and how it helps solve your customers' problems.",
     },
     {
       icon: <FaRocket className="w-8 h-8 text-primary" />,
-      title: "Business Growth Toolkit",
+      title: "Feature Four",
       description:
-        "Access essential tools for launching and scaling. From initial idea to earning your first $$.",
+        "Describe your fourth feature in detail. Explain the benefits and how it helps solve your customers' problems.",
     },
   ];
+
+  const features = propFeatures || defaultFeatures;
 
   return (
     <section className="py-16 bg-base-200">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-center mb-16">
-          <span className="border-b-4 border-primary pb-2">
-            Powerful Features
-          </span>
+          <span className="border-b-4 border-primary pb-2">{title}</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (

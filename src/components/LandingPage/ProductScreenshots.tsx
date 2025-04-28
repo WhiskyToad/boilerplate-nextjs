@@ -2,18 +2,31 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
-import posthog from "posthog-js";
 
-const ProductScreenshots: React.FC = () => {
+interface ProductScreenshotsProps {
+  title?: string;
+  subtitle?: string;
+  ctaText?: string;
+  ctaLink?: string;
+  videoSrc?: string;
+  actionBoxTitle?: string;
+  actionBoxDescription?: string;
+}
+
+const ProductScreenshots: React.FC<ProductScreenshotsProps> = ({
+  title = "Product Showcase",
+  subtitle = "See how our product helps users solve their problems efficiently.",
+  ctaText = "Get Started Today",
+  ctaLink = "/signup",
+  videoSrc = "/videos/product_demo.mp4",
+  actionBoxTitle = "Ready to streamline your process?",
+  actionBoxDescription = "Join others who are using our product to improve their workflow.",
+}) => {
   const router = useRouter();
   const [videoPlaying, setVideoPlaying] = useState(true);
 
   const handleCtaClick = () => {
-    posthog.capture("cta_clicked", {
-      cta_text: "Generate My Blueprint",
-      location: "product_screenshots",
-    });
-    router.push("/create-project");
+    router.push(ctaLink);
   };
 
   return (
@@ -26,7 +39,7 @@ const ProductScreenshots: React.FC = () => {
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
         >
-          Build Better Products, Solo Developer Style
+          {title}
         </motion.h2>
 
         <motion.p
@@ -36,8 +49,7 @@ const ProductScreenshots: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           viewport={{ once: true }}
         >
-          See how Boost Toad helps indie developers and solopreneurs organize
-          their product ideas and build with confidence.
+          {subtitle}
         </motion.p>
 
         {/* Video Section with play/pause control */}
@@ -52,8 +64,15 @@ const ProductScreenshots: React.FC = () => {
             className="flex justify-center bg-base-200 aspect-video relative cursor-pointer"
             onClick={() => setVideoPlaying(!videoPlaying)}
           >
-            <video className="w-full h-full" autoPlay muted loop playsInline>
-              <source src="/videos/sales_video.mp4" type="video/mp4" />
+            <video
+              className="w-full h-full"
+              autoPlay
+              muted
+              loop
+              playsInline
+              {...(videoPlaying ? {} : { pause: true })}
+            >
+              <source src={videoSrc} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
 
@@ -69,7 +88,7 @@ const ProductScreenshots: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Interactive Quiz Teaser */}
+        {/* Interactive CTA Box */}
         <motion.div
           className="max-w-3xl mx-auto p-8 bg-primary/10 rounded-2xl shadow-lg mb-12"
           initial={{ opacity: 0, scale: 0.95 }}
@@ -78,13 +97,10 @@ const ProductScreenshots: React.FC = () => {
           viewport={{ once: true }}
         >
           <h3 className="text-2xl font-bold mb-4 text-center">
-            Ready to streamline your development process?
+            {actionBoxTitle}
           </h3>
 
-          <p className="mb-6 text-center">
-            Join other solo developers who are using Boost Toad to clarify their
-            vision, organize their roadmap, and build better products.
-          </p>
+          <p className="mb-6 text-center">{actionBoxDescription}</p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
             <motion.button
@@ -94,13 +110,13 @@ const ProductScreenshots: React.FC = () => {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
             >
-              Generate My Blueprint{" "}
+              {ctaText}{" "}
               <FiArrowRight className="ml-2 transition-transform group-hover:translate-x-1" />
             </motion.button>
           </div>
 
           <p className="text-sm mt-4 text-center text-base-content/70">
-            No credit card required. Takes just 60 seconds.
+            No credit card required. Get started in minutes.
           </p>
         </motion.div>
       </div>
