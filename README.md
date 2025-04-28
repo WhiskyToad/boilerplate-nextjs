@@ -94,6 +94,28 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## How to Use
+
+This boilerplate provides a complete SaaS application structure that you can customize to your needs.
+
+### Configuration
+
+1. Modify the site configuration in `src/config/site.config.json` to set your site's details, including:
+   - Site title, description, and branding
+   - Landing page content and sections
+   - Pricing plans and feature lists
+   - FAQ content
+   - Legal documents
+
+### Customization
+
+The boilerplate is designed to be easily customizable:
+
+1. Modify UI components in the `components` directory
+2. Add new features by expanding the modules in the `features` directory
+3. Customize authentication flows in the `features/auth` directory
+4. Extend AI capabilities in the `features/generation` directory
+
 ## Project Structure
 
 ```
