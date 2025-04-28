@@ -1,0 +1,218 @@
+{
+  "site": {
+    "title": "Site Title",
+    "tagline": "Your Compelling Tagline",
+    "companyName": "Your Company Name",
+    "domain": "https://yourdomain.com",
+    "description": "Comprehensive description of your product or service",
+    "keywords": "keyword1, keyword2, keyword3, keyword4",
+    "contactEmail": "contact@yourdomain.com",
+    "privacyEmail": "privacy@yourdomain.com",
+    "logo": {
+      "path": "/images/logo.svg",
+      "alt": "Company Logo"
+    },
+    "socialImages": {
+      "ogImage": "/images/og_image.jpg",
+      "twitterCard": "/images/twitter_card.jpg"
+    }
+  },
+  "analytics": {
+    "enabled": false,
+    "posthog": {
+      "uiHost": "https://app.posthog.com",
+      "capturePageleave": true
+    }
+  },
+  "landing": {
+    "hero": {
+      "title": "Main headline for your landing page",
+      "subtitle": "Compelling subheading that explains your value proposition",
+      "primaryCTA": {
+        "text": "Get Started",
+        "url": "/register"
+      },
+      "secondaryCTA": {
+        "text": "Learn More",
+        "url": "#how-it-works"
+      },
+      "image": "/images/hero.png"
+    },
+    "valueProposition": {
+      "title": "Why Choose Us",
+      "subtitle": "Discover the benefits that set us apart",
+      "features": [
+        {
+          "title": "Feature 1",
+          "description": "Description of feature 1",
+          "icon": "IconName1"
+        },
+        {
+          "title": "Feature 2",
+          "description": "Description of feature 2",
+          "icon": "IconName2"
+        },
+        {
+          "title": "Feature 3",
+          "description": "Description of feature 3",
+          "icon": "IconName3"
+        }
+      ]
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Simple steps to get started",
+      "steps": [
+        {
+          "title": "Step 1",
+          "description": "Description of step 1",
+          "image": "/images/step1.png"
+        },
+        {
+          "title": "Step 2",
+          "description": "Description of step 2",
+          "image": "/images/step2.png"
+        },
+        {
+          "title": "Step 3",
+          "description": "Description of step 3",
+          "image": "/images/step3.png"
+        }
+      ]
+    },
+    "screenshots": {
+      "title": "Product Screenshots",
+      "subtitle": "See our product in action",
+      "images": [
+        {
+          "src": "/images/screenshot1.png",
+          "alt": "Screenshot 1 description",
+          "caption": "Caption for screenshot 1"
+        },
+        {
+          "src": "/images/screenshot2.png",
+          "alt": "Screenshot 2 description",
+          "caption": "Caption for screenshot 2"
+        }
+      ]
+    },
+    "pricing": {
+      "title": "Pricing Plans",
+      "subtitle": "Choose the perfect plan for your needs",
+      "plans": [
+        {
+          "name": "Free",
+          "price": "0",
+          "description": "For individuals just getting started",
+          "features": ["Feature 1", "Feature 2", "Feature 3"],
+          "cta": {
+            "text": "Get Started",
+            "url": "/register"
+          },
+          "highlighted": false
+        },
+        {
+          "name": "Pro",
+          "price": "29",
+          "description": "For professionals and growing teams",
+          "features": [
+            "Everything in Free",
+            "Pro Feature 1",
+            "Pro Feature 2",
+            "Pro Feature 3"
+          ],
+          "cta": {
+            "text": "Start Free Trial",
+            "url": "/register?plan=pro"
+          },
+          "highlighted": true
+        }
+      ]
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Find answers to common questions",
+      "questions": [
+        {
+          "question": "What is [Product Name]?",
+          "answer": "Answer to the question about what your product is."
+        },
+        {
+          "question": "How does pricing work?",
+          "answer": "Information about your pricing structure."
+        },
+        {
+          "question": "Can I cancel my subscription?",
+          "answer": "Details about cancellation policy."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "subtitle": "Join thousands of satisfied users today",
+      "buttonText": "Start Free Trial",
+      "buttonUrl": "/register"
+    },
+    "trustSafety": {
+      "title": "Trusted by Companies Everywhere",
+      "logos": [
+        {
+          "src": "/images/company1.svg",
+          "alt": "Company 1"
+        },
+        {
+          "src": "/images/company2.svg",
+          "alt": "Company 2"
+        }
+      ],
+      "testimonials": [
+        {
+          "quote": "This product has transformed how we work.",
+          "author": "Jane Doe",
+          "title": "CEO, Company Name",
+          "avatar": "/images/testimonial1.jpg"
+        }
+      ]
+    }
+  },
+  "legal": {
+    "terms": {
+      "lastUpdated": "January 1, 2023",
+      "sections": [
+        {
+          "title": "1. Acceptance of Terms",
+          "content": "By accessing or using {site.companyName} (\"Service\"), you agree to be bound by these Terms and Conditions."
+        },
+        {
+          "title": "2. Use of the Service",
+          "content": "{site.companyName} provides a platform for users to {description}. The Service is provided \"as is\" and \"as available\" without warranties of any kind."
+        }
+      ]
+    },
+    "privacy": {
+      "lastUpdated": "January 1, 2023",
+      "sections": [
+        {
+          "title": "1. Information We Collect",
+          "content": "We collect information that you provide directly to us, including:",
+          "listItems": [
+            "Account information (name, email address, password)",
+            "Profile information",
+            "Content you create within the Service",
+            "Communications you have with us"
+          ]
+        },
+        {
+          "title": "2. How We Use Your Information",
+          "content": "We use the information we collect to:",
+          "listItems": [
+            "Provide, maintain, and improve our Service",
+            "Process transactions",
+            "Send you technical notices, updates, and support messages",
+            "Respond to your comments and questions"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,13 +1,21 @@
-const EXTERNAL_DATA_URL = "https://boosttoad.com"; // Replace with your domain
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const getSiteConfig = require("../utils/siteConfig").default;
+
+// Get configuration
+const config = getSiteConfig();
+const EXTERNAL_DATA_URL = config.get("site.domain", "{YOUR_DOMAIN}");
 
 // List your site's static pages here
 const staticPages = [
   "/",
-  "/create-project",
-  "/learn/lean-canvas",
-  "/learn/four-c-framework", // Added 4C framework page
+  "/login",
+  "/register",
   "/pricing",
-  // Add other static pages like /faq, /terms, /privacy if they exist
+  "/about",
+  "/contact",
+  "/terms",
+  "/privacy",
+  // Add other static pages as needed
 ];
 
 function generateSiteMap(pages) {
@@ -23,10 +31,8 @@ function generateSiteMap(pages) {
          return `
        <url>
            <loc>${url}</loc>
-           <lastmod>${
-             new Date().toISOString().split("T")[0]
-           }</lastmod> {/* Use current date or fetch last modified date */}
-           <changefreq>weekly</changefreq> {/* Adjust frequency */}
+           <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+           <changefreq>weekly</changefreq>
            <priority>${priority}</priority>
        </url>
      `;
@@ -42,7 +48,8 @@ function SiteMap() {
 
 export async function getServerSideProps({ res }) {
   // We generate the XML sitemap with the static pages
-  // TODO: Add dynamic pages (e.g., blog posts) here if applicable by fetching their paths
+  // TODO: Add dynamic pages here if applicable by fetching their paths
+  // Example: const dynamicPages = await fetchBlogPosts().then(posts => posts.map(p => `/blog/${p.slug}`));
   const allPages = [...staticPages /*, ...dynamicPages */];
 
   const sitemap = generateSiteMap(allPages);

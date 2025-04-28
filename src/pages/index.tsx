@@ -1,5 +1,4 @@
 import type { ReactElement } from "react";
-import type { NextPageWithLayout } from "./_app";
 import Head from "next/head";
 import Hero from "@/components/LandingPage/Hero";
 import ValueProposition from "@/components/LandingPage/ValueProposition";
@@ -9,24 +8,24 @@ import PricingTeaser from "@/components/LandingPage/PricingTeaser";
 import TrustSafety from "@/components/LandingPage/TrustSafety";
 import FAQ from "@/components/LandingPage/FAQ";
 import FinalCTA from "@/components/LandingPage/FinalCTA";
+import getSiteConfig from "@/utils/siteConfig";
 
-const Page: NextPageWithLayout = () => {
-  const siteUrl = "https://boosttoad.com"; // Replace with your actual domain
-  const pageTitle =
-    "Boost Toad - Launch Your Startup Faster with AI-Driven Plans"; // Updated Title
-  const pageDescription =
-    "Cut ideation time by 80% and build with confidence. Get your AI-generated MVP blueprint in 60 seconds. No credit card required."; // Updated Description
-  const imageUrl = `${siteUrl}/images/og_image_v2.jpg`; // Consider updating OG image
+const Page = () => {
+  const config = getSiteConfig();
+  const siteUrl = config.get("site.domain");
+  const pageTitle = `${config.get("site.title")} - ${config.get(
+    "site.tagline"
+  )}`;
+  const pageDescription = config.get("site.description");
+  const imageUrl = `${siteUrl}${config.get("site.socialImages.ogImage")}`;
+  const keywords = config.get("site.keywords");
 
   return (
     <>
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <meta
-          name="keywords"
-          content="AI startup coach, MVP blueprint generator, Lean Canvas AI, feature prioritization tool, startup launch checklist, product roadmap AI, idea validation tool"
-        />
+        <meta name="keywords" content={keywords} />
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={siteUrl} />
@@ -41,7 +40,7 @@ const Page: NextPageWithLayout = () => {
         <meta property="twitter:description" content={pageDescription} />
         <meta property="twitter:image" content={imageUrl} />
 
-        {/* Favicon links remain the same */}
+        {/* Favicon links - uncomment and update paths as needed */}
         {/* <link rel="icon" href="/favicon.ico" /> */}
         {/* <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"> */}
         {/* <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"> */}

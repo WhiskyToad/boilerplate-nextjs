@@ -13,6 +13,8 @@ import { useRouter } from "next/router";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import { getFontClassNames } from "@/config/fonts";
+import ConfigLoader from "@/components/ConfigLoader";
+import getSiteConfig from "@/utils/siteConfig";
 
 export type NextPageWithLayout<P = object, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -22,25 +24,51 @@ type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
 
-// Check if PostHog is available (client-side and not in development)
-const isPostHogAvailable =
-  typeof window !== "undefined" && process.env.NODE_ENV !== "development";
-
 export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   useAuth();
   const router = useRouter();
 
+  // Get site configuration
+  const config = getSiteConfig();
+  const siteTitle = config.get("site.title", "{SITE_TITLE}");
+  const siteDescription = config.get(
+    "site.description",
+    "{YOUR_SITE_DESCRIPTION}"
+  );
+  const siteKeywords = config.get(
+    "site.keywords",
+    "{COMMA_SEPARATED_KEYWORDS}"
+  );
+  const companyName = config.get("site.companyName", "{YOUR_COMPANY_NAME}");
+  const domain = config.get("site.domain", "{YOUR_DOMAIN}");
+
+  // Analytics config
+  const ENABLE_ANALYTICS = config.get("analytics.enabled", false);
+  const posthogUiHost = config.get(
+    "analytics.posthog.uiHost",
+    "https://app.posthog.com"
+  );
+  const posthogCapturePageleave = config.get(
+    "analytics.posthog.capturePageleave",
+    true
+  );
+
+  // Check if PostHog is available
+  const isPostHogAvailable =
+    ENABLE_ANALYTICS &&
+    typeof window !== "undefined" &&
+    process.env.NODE_ENV !== "development" &&
+    process.env.NEXT_PUBLIC_POSTHOG_KEY;
+
   useEffect(() => {
-    // Initialize PostHog only if available
+    // Initialize PostHog only if enabled and available
     if (isPostHogAvailable) {
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "/ingest",
-        ui_host: "https://eu.posthog.com",
-        capture_pageview: false, // Disable automatic pageview capture
-        capture_pageleave: true,
+        ui_host: posthogUiHost,
+        capture_pageview: false,
+        capture_pageleave: posthogCapturePageleave,
       });
-    } else if (process.env.NODE_ENV === "development") {
-      console.log("PostHog disabled in development mode.");
     }
 
     // Track page views manually only if PostHog is available
@@ -55,7 +83,12 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
     return () => {
       router.events.off("routeChangeComplete", handleRouteChange);
     };
-  }, [router.events]);
+  }, [
+    router.events,
+    posthogUiHost,
+    posthogCapturePageleave,
+    isPostHogAvailable,
+  ]);
 
   // Use the layout defined at the page level, if available
   const getLayout = Component.getLayout ?? ((page) => page);
@@ -63,66 +96,45 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
   const AppContent = (
     <Providers>
       <Head>
-        <title>
-          Boost Toad: AI-Powered Product Development Blueprint & Roadmap Tool
-        </title>
-        <meta
-          name="description"
-          content="Transform ideas into products with Boost Toad's AI blueprint generator, feature prioritization matrix, interactive roadmap planner, and task management system. Build MVPs faster with data-driven guidance."
-        />
-        <meta
-          name="keywords"
-          content="product development, AI blueprint generator, MVP planning, feature prioritization, startup roadmap, product management tool, agile development, task tracking, project validation, lean canvas, product strategy"
-        />
-        <meta name="author" content="Boost Toad" />
+        <title>{`${siteTitle}: ${siteDescription}`}</title>
+        <meta name="description" content={siteDescription} />
+        <meta name="keywords" content={siteKeywords} />
+        <meta name="author" content={companyName} />
 
-        {/* Add favicon and app icons */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/favicon-32x32.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/favicon-16x16.png"
-        />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/site.webmanifest" />
+        {/* Add favicon and app icons - uncomment and update as needed */}
+        {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
+        {/* <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /> */}
+        {/* <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" /> */}
+        {/* <link rel="apple-touch-icon" href="/apple-touch-icon.png" /> */}
+        {/* <link rel="manifest" href="/site.webmanifest" /> */}
         <meta name="theme-color" content="#ffffff" />
 
         {/* Open Graph tags for social sharing */}
         <meta
           property="og:title"
-          content="Boost Toad: AI-Powered Product Development Blueprint & Roadmap Tool"
+          content={`${siteTitle}: ${siteDescription}`}
         />
-        <meta
-          property="og:description"
-          content="Transform ideas into products with AI-generated blueprints, feature prioritization, and interactive roadmaps. Build MVPs faster with data-driven guidance."
-        />
+        <meta property="og:description" content={siteDescription} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://boosttoad.com" />
+        <meta property="og:url" content={domain} />
         <meta
           property="og:image"
-          content="https://boosttoad.com/og-image.png"
+          content={`${domain}${config.get(
+            "site.socialImages.ogImage",
+            "/og-image.png"
+          )}`}
         />
 
         {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content="Boost Toad: AI-Powered Product Development Tool"
-        />
-        <meta
-          name="twitter:description"
-          content="Transform ideas into products with AI blueprints, feature prioritization, and interactive roadmaps."
-        />
+        <meta name="twitter:title" content={siteTitle} />
+        <meta name="twitter:description" content={siteDescription} />
         <meta
           name="twitter:image"
-          content="https://boosttoad.com/twitter-card.png"
+          content={`${domain}${config.get(
+            "site.socialImages.twitterCard",
+            "/twitter-card.png"
+          )}`}
         />
       </Head>
       <div className={getFontClassNames()}>
@@ -158,11 +170,13 @@ export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
     </Providers>
   );
 
-  // Conditionally wrap with PostHogProvider
-  if (isPostHogAvailable) {
-    return <PostHogProvider client={posthog}>{AppContent}</PostHogProvider>;
-  }
-
-  // Render without PostHogProvider if not available (e.g., in development)
-  return AppContent;
+  return (
+    <ConfigLoader>
+      {isPostHogAvailable ? (
+        <PostHogProvider client={posthog}>{AppContent}</PostHogProvider>
+      ) : (
+        AppContent
+      )}
+    </ConfigLoader>
+  );
 }
