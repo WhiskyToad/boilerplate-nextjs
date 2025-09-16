@@ -4,6 +4,8 @@ import "./globals.css";
 import { ReactQueryProvider } from "@/lib/react-query";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import { ToastProvider } from "@/components/ui/toast/ToastProvider";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -69,29 +71,17 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${poppins.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <PostHogProvider>
-          <ReactQueryProvider>
-            {children}
-            <ToastProvider />
-          </ReactQueryProvider>
-        </PostHogProvider>
+        <ErrorBoundary>
+          <PostHogProvider>
+            <ReactQueryProvider>
+              <OnboardingProvider>
+                {children}
+                <ToastProvider />
+              </OnboardingProvider>
+            </ReactQueryProvider>
+          </PostHogProvider>
+        </ErrorBoundary>
 
-        {/* Boost Toad Feedback Widget */}
-        <script
-          src={`${
-            process.env.NODE_ENV === "development"
-              ? "http://localhost:3000"
-              : "https://www.boosttoad.com"
-          }/api/widget/bundle?projectId=5ea8a71e-9158-49fb-8e15-b92cdacd8cc3`}
-          async
-        />
-        <script
-          id="TrackTheMetric"
-          data-website-id="c38ff7de-5916-4485-92b7-fc30a3ac18b0"
-          data-domain="boosttoad.com"
-          src="https://app.trackthemetric.com/tracker.js"
-          defer
-        ></script>
       </body>
     </html>
   );
