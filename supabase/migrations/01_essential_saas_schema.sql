@@ -43,23 +43,6 @@ CREATE TABLE IF NOT EXISTS teams (
 -- Enable RLS on teams
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 
--- Teams policies - only team members can see teams
-CREATE POLICY "Team members can view teams" ON teams
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM team_members 
-      WHERE team_id = teams.id AND user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Team owners can update teams" ON teams
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM team_members 
-      WHERE team_id = teams.id AND user_id = auth.uid() AND role = 'owner'
-    )
-  );
-
 -- =============================================================================
 -- TEAM MEMBERS TABLE
 -- =============================================================================
@@ -83,6 +66,23 @@ CREATE POLICY "Team members can view team membership" ON team_members
     EXISTS (
       SELECT 1 FROM team_members tm 
       WHERE tm.team_id = team_members.team_id AND tm.user_id = auth.uid()
+    )
+  );
+
+-- Teams policies (moved here after team_members table exists)
+CREATE POLICY "Team members can view teams" ON teams
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM team_members 
+      WHERE team_id = teams.id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Team owners can update teams" ON teams
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM team_members 
+      WHERE team_id = teams.id AND user_id = auth.uid() AND role = 'owner'
     )
   );
 

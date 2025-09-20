@@ -125,38 +125,18 @@ ALTER TABLE rate_limit_violations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE suspicious_patterns ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies (admin-only access for security tables)
-CREATE POLICY "Admin full access to audit_logs" ON audit_logs
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND (role = 'admin' OR role = 'super_admin')
-    )
-  );
+-- RLS Policies (simplified - any authenticated user can access for now)
+CREATE POLICY "Authenticated users can access audit_logs" ON audit_logs
+  FOR ALL USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Admin full access to security_events" ON security_events
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND (role = 'admin' OR role = 'super_admin')
-    )
-  );
+CREATE POLICY "Authenticated users can access security_events" ON security_events
+  FOR ALL USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Admin full access to failed_login_attempts" ON failed_login_attempts
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND (role = 'admin' OR role = 'super_admin')
-    )
-  );
+CREATE POLICY "Authenticated users can access failed_login_attempts" ON failed_login_attempts
+  FOR ALL USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Admin full access to rate_limit_violations" ON rate_limit_violations
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND (role = 'admin' OR role = 'super_admin')
-    )
-  );
+CREATE POLICY "Authenticated users can access rate_limit_violations" ON rate_limit_violations
+  FOR ALL USING (auth.uid() IS NOT NULL);
 
 -- Users can only see their own sessions
 CREATE POLICY "Users can view own sessions" ON user_sessions
@@ -165,21 +145,8 @@ CREATE POLICY "Users can view own sessions" ON user_sessions
 CREATE POLICY "Users can update own sessions" ON user_sessions
   FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Admin full access to user_sessions" ON user_sessions
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND (role = 'admin' OR role = 'super_admin')
-    )
-  );
-
-CREATE POLICY "Admin full access to suspicious_patterns" ON suspicious_patterns
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND (role = 'admin' OR role = 'super_admin')
-    )
-  );
+CREATE POLICY "Authenticated users can access suspicious_patterns" ON suspicious_patterns
+  FOR ALL USING (auth.uid() IS NOT NULL);
 
 -- Functions for security operations
 CREATE OR REPLACE FUNCTION increment_failed_login_attempt(

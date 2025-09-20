@@ -14,7 +14,7 @@
     "build-storybook": "storybook build",
     "tsc": "tsc --noEmit",
     "tsc:watch": "tsc --noEmit --watch",
-    "types:generate": "supabase gen types typescript --project-id YOUR_PROJECT_ID > src/lib/supabase/types.ts"
+    "types:generate": "supabase gen types typescript --project-id awhpbwucogskqttcmqdz > src/lib/supabase/types.ts"
   },
   "dependencies": {
     "@react-email/render": "^1.2.2",
