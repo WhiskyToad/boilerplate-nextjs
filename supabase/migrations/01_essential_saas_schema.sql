@@ -237,7 +237,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, display_name)
+  INSERT INTO public.profiles (id, email, display_name)
   VALUES (
     NEW.id,
     NEW.email,
@@ -249,15 +249,15 @@ BEGIN
   );
   
   -- Create initial subscription record
-  INSERT INTO user_subscriptions (user_id, tier, status)
+  INSERT INTO public.user_subscriptions (user_id, tier, status)
   VALUES (NEW.id, 'free', 'active');
   
   -- Create initial usage record  
-  INSERT INTO user_usage (user_id)
+  INSERT INTO public.user_usage (user_id)
   VALUES (NEW.id);
   
   -- Create personal team
-  INSERT INTO teams (name, created_by, is_personal)
+  INSERT INTO public.teams (name, created_by, is_personal)
   VALUES (
     COALESCE(
       NEW.raw_user_meta_data->>'full_name',
@@ -269,9 +269,9 @@ BEGIN
   );
   
   -- Add user as owner of personal team
-  INSERT INTO team_members (team_id, user_id, role)
+  INSERT INTO public.team_members (team_id, user_id, role)
   SELECT id, NEW.id, 'owner'
-  FROM teams 
+  FROM public.teams 
   WHERE created_by = NEW.id AND is_personal = TRUE;
   
   RETURN NEW;
