@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DemoFlow Recorder</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <img src="../../assets/icons/icon-32.png" alt="DemoFlow" class="logo-icon">
+        <h1>DemoFlow</h1>
+      </div>
+      <div class="status-indicator" id="statusIndicator">
+        <span class="status-text" id="statusText">Ready</span>
+      </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="auth-section" id="authSection">
+      <h3>Connect to DemoFlow</h3>
+      <p>Sign in to save and manage your demos</p>
+      <button class="btn btn-primary" id="connectBtn">Connect Account</button>
+    </div>
+
+    <!-- Recording Controls -->
+    <div class="recording-section" id="recordingSection" style="display: none;">
+      <!-- Demo Info -->
+      <div class="demo-info" id="demoInfo">
+        <input type="text" id="demoTitle" placeholder="Demo title..." class="demo-title-input">
+        <textarea id="demoDescription" placeholder="Optional description..." class="demo-description-input"></textarea>
+      </div>
+
+      <!-- Current Recording Status -->
+      <div class="current-demo" id="currentDemo" style="display: none;">
+        <div class="demo-details">
+          <h4 id="currentDemoTitle">Recording Demo</h4>
+          <div class="demo-stats">
+            <span class="step-count" id="stepCount">0 steps</span>
+            <span class="duration" id="duration">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="controls">
+        <button class="btn btn-record" id="recordBtn">
+          <span class="btn-icon">●</span>
+          <span class="btn-text">Start Recording</span>
+        </button>
+        
+        <button class="btn btn-pause" id="pauseBtn" style="display: none;">
+          <span class="btn-icon">⏸</span>
+          <span class="btn-text">Pause</span>
+        </button>
+        
+        <button class="btn btn-stop" id="stopBtn" style="display: none;">
+          <span class="btn-icon">⏹</span>
+          <span class="btn-text">Stop & Save</span>
+        </button>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions" id="quickActions" style="display: none;">
+        <button class="btn btn-secondary btn-small" id="addAnnotationBtn">
+          <span class="btn-icon">💬</span>
+          Add Note
+        </button>
+        <button class="btn btn-secondary btn-small" id="addPauseBtn">
+          <span class="btn-icon">⏱</span>
+          Add Pause
+        </button>
+      </div>
+    </div>
+
+    <!-- Recent Demos -->
+    <div class="recent-demos" id="recentDemos">
+      <h3>Recent Demos</h3>
+      <div class="demo-list" id="demoList">
+        <div class="empty-state">
+          <p>No demos yet. Start recording to create your first demo!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button class="btn btn-link" id="openDashboard">Open Dashboard</button>
+      <button class="btn btn-link" id="settingsBtn">Settings</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Settings</h3>
+        <button class="close-btn" id="closeSettings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-group">
+          <label for="apiEndpoint">API Endpoint</label>
+          <input type="text" id="apiEndpoint" value="http://localhost:3000" class="setting-input">
+        </div>
+        <div class="setting-group">
+          <label for="autoSave">Auto-save steps</label>
+          <input type="checkbox" id="autoSave" checked>
+        </div>
+        <div class="setting-group">
+          <label for="showHints">Show interaction hints</label>
+          <input type="checkbox" id="showHints" checked>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="resetSettings">Reset</button>
+        <button class="btn btn-primary" id="saveSettings">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

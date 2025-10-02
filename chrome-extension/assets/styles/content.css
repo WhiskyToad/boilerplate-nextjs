@@ -1,0 +1,284 @@
+/* DemoFlow Content Script Styles */
+/* Styles for overlay elements and interaction indicators */
+
+.demoflow-overlay {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 999999 !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  color: white !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.demoflow-recording-indicator {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.demoflow-record-dot {
+  width: 10px !important;
+  height: 10px !important;
+  background: #ef4444 !important;
+  border-radius: 50% !important;
+  animation: demoflow-pulse 1.5s ease-in-out infinite !important;
+}
+
+@keyframes demoflow-pulse {
+  0%, 100% {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+  50% {
+    opacity: 0.6 !important;
+    transform: scale(1.1) !important;
+  }
+}
+
+.demoflow-record-text {
+  font-weight: 600 !important;
+  color: white !important;
+}
+
+.demoflow-step-count {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 12px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+}
+
+/* Element highlighting styles */
+.demoflow-highlight {
+  position: fixed !important;
+  border: 2px solid #007bff !important;
+  background: rgba(0, 123, 255, 0.1) !important;
+  pointer-events: none !important;
+  z-index: 999998 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.3) !important;
+  animation: demoflow-highlight-fade 0.5s ease-out !important;
+}
+
+@keyframes demoflow-highlight-fade {
+  0% {
+    opacity: 0 !important;
+    transform: scale(1.05) !important;
+  }
+  50% {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+  100% {
+    opacity: 0 !important;
+    transform: scale(1) !important;
+  }
+}
+
+.demoflow-preview {
+  position: fixed !important;
+  border: 1px dashed #007bff !important;
+  pointer-events: none !important;
+  z-index: 999997 !important;
+  border-radius: 4px !important;
+  background: rgba(0, 123, 255, 0.05) !important;
+  opacity: 0.8 !important;
+  transition: opacity 0.1s ease !important;
+}
+
+/* Interactive element indicators */
+.demoflow-interactive-hint {
+  position: relative !important;
+}
+
+.demoflow-interactive-hint::after {
+  content: '' !important;
+  position: absolute !important;
+  top: -2px !important;
+  left: -2px !important;
+  right: -2px !important;
+  bottom: -2px !important;
+  border: 1px dashed rgba(0, 123, 255, 0.6) !important;
+  border-radius: 4px !important;
+  pointer-events: none !important;
+  z-index: 999996 !important;
+  animation: demoflow-hint-glow 2s ease-in-out infinite !important;
+}
+
+@keyframes demoflow-hint-glow {
+  0%, 100% {
+    opacity: 0.6 !important;
+  }
+  50% {
+    opacity: 1 !important;
+  }
+}
+
+/* Click ripple effect */
+.demoflow-click-ripple {
+  position: fixed !important;
+  border-radius: 50% !important;
+  background: rgba(0, 123, 255, 0.3) !important;
+  pointer-events: none !important;
+  z-index: 999995 !important;
+  animation: demoflow-ripple 0.6s ease-out !important;
+}
+
+@keyframes demoflow-ripple {
+  0% {
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 1 !important;
+  }
+  100% {
+    width: 40px !important;
+    height: 40px !important;
+    opacity: 0 !important;
+  }
+}
+
+/* Tooltip for annotations */
+.demoflow-tooltip {
+  position: fixed !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: white !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  max-width: 200px !important;
+  word-wrap: break-word !important;
+  z-index: 999994 !important;
+  pointer-events: none !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+  opacity: 0 !important;
+  animation: demoflow-tooltip-show 0.3s ease-out forwards !important;
+}
+
+@keyframes demoflow-tooltip-show {
+  0% {
+    opacity: 0 !important;
+    transform: translateY(10px) !important;
+  }
+  100% {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
+
+.demoflow-tooltip::before {
+  content: '' !important;
+  position: absolute !important;
+  bottom: -5px !important;
+  left: 50% !important;
+  margin-left: -5px !important;
+  border: 5px solid transparent !important;
+  border-top-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Form field indicators */
+.demoflow-form-indicator {
+  position: relative !important;
+}
+
+.demoflow-form-indicator::before {
+  content: '✏️' !important;
+  position: absolute !important;
+  top: -20px !important;
+  right: -5px !important;
+  font-size: 12px !important;
+  z-index: 999993 !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+}
+
+/* Button indicators */
+.demoflow-button-indicator {
+  position: relative !important;
+}
+
+.demoflow-button-indicator::before {
+  content: '👆' !important;
+  position: absolute !important;
+  top: -25px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 14px !important;
+  z-index: 999993 !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+  animation: demoflow-bounce 1s ease-in-out infinite !important;
+}
+
+@keyframes demoflow-bounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) !important;
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px) !important;
+  }
+}
+
+/* Navigation indicator */
+.demoflow-nav-indicator {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: white !important;
+  padding: 16px 24px !important;
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  z-index: 999992 !important;
+  pointer-events: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(10px) !important;
+  animation: demoflow-nav-show 2s ease-out !important;
+}
+
+@keyframes demoflow-nav-show {
+  0% {
+    opacity: 0 !important;
+    transform: translate(-50%, -50%) scale(0.9) !important;
+  }
+  20%, 80% {
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+  }
+  100% {
+    opacity: 0 !important;
+    transform: translate(-50%, -50%) scale(0.9) !important;
+  }
+}
+
+/* Ensure no conflicts with existing styles */
+.demoflow-overlay *,
+.demoflow-highlight *,
+.demoflow-preview *,
+.demoflow-tooltip *,
+.demoflow-nav-indicator * {
+  all: unset !important;
+}
+
+/* Hide during screenshot capture */
+.demoflow-capturing .demoflow-overlay,
+.demoflow-capturing .demoflow-highlight,
+.demoflow-capturing .demoflow-preview,
+.demoflow-capturing .demoflow-tooltip {
+  display: none !important;
+}
