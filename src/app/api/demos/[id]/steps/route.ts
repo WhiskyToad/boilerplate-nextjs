@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { withAuth } from '@/lib/api/with-auth';
+import { withAuth } from '@/lib/api/middleware';
 import { apiResponse, apiError } from '@/lib/api/response';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ const bulkStepsSchema = z.object({
 });
 
 export const GET = withAuth(async (request: NextRequest, user: any, context: { params: { id: string } }) => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const demoId = context.params.id;
 
   // Verify demo ownership
@@ -49,7 +49,7 @@ export const GET = withAuth(async (request: NextRequest, user: any, context: { p
 });
 
 export const POST = withAuth(async (request: NextRequest, user: any, context: { params: { id: string } }) => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const demoId = context.params.id;
 
   // Verify demo ownership
