@@ -1,6 +1,8 @@
 // DemoFlow API Client for Chrome Extension
 // Handles communication with the DemoFlow backend API
 
+import { AuthManager } from './auth-manager.js';
+
 interface APIResponse<T = any> {
   success: boolean;
   data: T;
@@ -41,60 +43,84 @@ interface UploadAssetResponse {
 
 export class DemoFlowAPI {
   private baseUrl: string = 'http://localhost:3000';
-  private authToken: string | null = null;
+  private authManager: AuthManager;
 
   constructor() {
+    this.authManager = AuthManager.getInstance();
     this.loadConfig();
   }
 
-  private async loadConfig(): Promise<void> {
+  public async loadConfig(): Promise<void> {
     try {
-      const data = await chrome.storage.local.get(['settings', 'authToken']);
+      const data = await chrome.storage.local.get(['settings']);
       if (data.settings?.apiEndpoint) {
         this.baseUrl = data.settings.apiEndpoint;
-      }
-      if (data.authToken) {
-        this.authToken = data.authToken;
       }
     } catch (error) {
       console.warn('Failed to load API config:', error);
     }
   }
 
-  public setAuthToken(token: string): void {
-    this.authToken = token;
-  }
-
-  private getHeaders(): Record<string, string> {
+  private async getHeaders(): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
+    const token = await this.authManager.getValidToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
   }
 
-  private async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<APIResponse<T>> {
+  public async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<APIResponse<T>> {
+    // Check authentication first
+    if (!this.authManager.isAuthenticated()) {
+      if (this.authManager.needsReauth()) {
+        throw new Error('Authentication required - please log in');
+      }
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
+    const headers = await this.getHeaders();
     const config: RequestInit = {
-      headers: this.getHeaders(),
+      headers,
       ...options,
     };
+
+    const token = await this.authManager.getValidToken();
+    console.log('API Request:', {
+      url,
+      headers,
+      authToken: token ? `${token.substring(0, 20)}...` : 'Missing'
+    });
 
     try {
       const response = await fetch(url, config);
       
+      if (response.status === 401) {
+        // Token is invalid/expired, trigger re-auth
+        console.log('Received 401, triggering re-authentication');
+        await this.authManager.clearAuthState();
+        throw new Error('Authentication expired - please log in again');
+      }
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
+      
+      // If it's an auth error, make sure we clear the state
+      if (error instanceof Error && error.message.includes('Authentication')) {
+        await this.authManager.clearAuthState();
+      }
+      
       throw error;
     }
   }
@@ -195,8 +221,9 @@ export class DemoFlowAPI {
     }
 
     const headers: Record<string, string> = {};
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
+    const token = await this.authManager.getValidToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await this.request<UploadAssetResponse>(`/api/demos/${demoId}/assets`, {
@@ -265,7 +292,8 @@ export class DemoFlowAPI {
 
   // Authentication helpers
   public async validateToken(): Promise<boolean> {
-    if (!this.authToken) return false;
+    const token = await this.authManager.getValidToken();
+    if (!token) return false;
 
     try {
       await this.request('/api/user/profile');
@@ -277,7 +305,6 @@ export class DemoFlowAPI {
   }
 
   public async logout(): Promise<void> {
-    this.authToken = null;
-    await chrome.storage.local.remove(['authToken', 'user']);
+    await this.authManager.clearAuthState();
   }
 }

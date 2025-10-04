@@ -18,7 +18,6 @@ interface ElementData {
   selector: string;
   xpath: string;
   url: string;
-  timestamp: number;
   viewport: {
     width: number;
     height: number;
@@ -43,10 +42,13 @@ class DemoFlowCapture {
   private stepCount: number = 0;
   private lastInteraction: Element | null = null;
   private overlay: HTMLElement | null = null;
+  private instanceId: string;
   
   constructor() {
+    this.instanceId = `capture_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     this.setupEventListeners();
     this.createOverlay();
+    this.setupAuthBridge();
   }
 
   private setupEventListeners(): void {
@@ -63,43 +65,85 @@ class DemoFlowCapture {
     document.addEventListener('submit', this.handleSubmit.bind(this), true);
     document.addEventListener('keydown', this.handleKeydown.bind(this), true);
     
-    // Capture hover for better UX
-    document.addEventListener('mouseover', this.handleMouseover.bind(this), true);
+    // Capture hover for better UX (throttled)
+    document.addEventListener('mouseover', this.throttle(this.handleMouseover.bind(this), 100), true);
+  }
+
+  private setupAuthBridge(): void {
+    // Only set up auth bridge on localhost:3000 pages
+    if (window.location.origin !== 'http://localhost:3000') {
+      return;
+    }
+
+    console.log('DemoFlow content script: Setting up auth bridge for', window.location.href);
+
+    // Listen for window messages from the web page
+    window.addEventListener('message', (event) => {
+      console.log('Content script received window message:', event.data);
+      
+      if (event.origin !== 'http://localhost:3000') {
+        console.log('Ignoring message from unknown origin:', event.origin);
+        return;
+      }
+      
+      if (event.data.type === 'DEMOFLOW_AUTH_SUCCESS') {
+        console.log('Auth success detected, forwarding to background script');
+        
+        // Forward to background script
+        chrome.runtime.sendMessage({
+          type: 'AUTH_SUCCESS_FROM_WEB',
+          data: event.data.data
+        }).then(response => {
+          console.log('Background script response:', response);
+        }).catch(error => {
+          console.error('Failed to send message to background script:', error);
+        });
+      }
+    });
+
+    console.log('DemoFlow auth bridge ready');
   }
 
   private handleMessage(message: MessageData, _sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void): void {
-    switch (message.type) {
-      case 'START_CAPTURE':
-        this.startCapture(message.data);
-        sendResponse({ success: true });
-        break;
+    try {
+      switch (message.type) {
+        case 'PING':
+          sendResponse({ success: true, ready: true, instanceId: this.instanceId });
+          break;
 
-      case 'STOP_CAPTURE':
-        this.stopCapture();
-        sendResponse({ success: true });
-        break;
+        case 'START_CAPTURE':
+          this.startCapture(message.data);
+          sendResponse({ success: true, instanceId: this.instanceId });
+          break;
 
-      case 'STATE_UPDATE':
-        this.updateState(message.data);
-        sendResponse({ success: true });
-        break;
+        case 'STOP_CAPTURE':
+          this.stopCapture();
+          sendResponse({ success: true });
+          break;
 
-      default:
-        sendResponse({ success: false, error: 'Unknown message type' });
+        case 'STATE_UPDATE':
+          this.updateState(message.data);
+          sendResponse({ success: true });
+          break;
+
+        default:
+          console.warn('Unknown message type:', message.type);
+          sendResponse({ success: false, error: 'Unknown message type' });
+      }
+    } catch (error) {
+      console.error('Error handling message:', error);
+      sendResponse({ success: false, error: (error as Error).message });
     }
   }
 
   private startCapture(data: { demoId: string }): void {
-    console.log('Starting DOM capture for demo:', data.demoId);
     this.isCapturing = true;
     this.stepCount = 0;
-    
     this.showOverlay();
     this.captureInitialState();
   }
 
   private stopCapture(): void {
-    console.log('Stopping DOM capture');
     this.isCapturing = false;
     this.hideOverlay();
   }
@@ -113,7 +157,9 @@ class DemoFlowCapture {
   }
 
   private async handleClick(event: MouseEvent): Promise<void> {
-    if (!this.isCapturing) return;
+    if (!this.isCapturing) {
+      return;
+    }
 
     const element = event.target as Element;
     const elementData = this.captureElement(element);
@@ -286,7 +332,6 @@ class DemoFlowCapture {
       
       // Context
       url: window.location.href,
-      timestamp: Date.now(),
       viewport: {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -388,7 +433,6 @@ class DemoFlowCapture {
         type: 'page',
         url: window.location.href,
         title: document.title,
-        timestamp: Date.now(),
         viewport: {
           width: window.innerWidth,
           height: window.innerHeight
@@ -505,10 +549,31 @@ class DemoFlowCapture {
       }
     }, 100);
   }
+
+  // Utility function to throttle frequent events
+  private throttle<T extends (...args: any[]) => any>(func: T, delay: number): T {
+    let timeoutId: number | null = null;
+    let lastExecTime = 0;
+    return ((...args: any[]) => {
+      const currentTime = Date.now();
+      
+      if (currentTime - lastExecTime > delay) {
+        func(...args);
+        lastExecTime = currentTime;
+      } else {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => {
+          func(...args);
+          lastExecTime = Date.now();
+        }, delay - (currentTime - lastExecTime));
+      }
+    }) as T;
+  }
 }
 
 // Initialize content script
 if (!(window as any).demoFlowCapture) {
   (window as any).demoFlowCapture = new DemoFlowCapture();
-  console.log('DemoFlow content script initialized');
 }

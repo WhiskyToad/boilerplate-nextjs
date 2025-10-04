@@ -1,7 +1,5 @@
-// DemoFlow Popup Script
+// DemoFlow Popup Script - No Module Imports
 // Handles the extension popup UI and user interactions
-
-import { AuthManager, AuthState } from '../utils/auth-manager.js';
 
 interface PopupRecordingState {
   isRecording: boolean;
@@ -10,20 +8,26 @@ interface PopupRecordingState {
   steps: any[];
 }
 
+interface AuthState {
+  isAuthenticated: boolean;
+  user: any;
+  token: string | null;
+  needsReauth: boolean;
+}
+
 interface MessageData {
   type: string;
   data?: any;
 }
 
 class DemoFlowPopup {
-  private authManager: AuthManager;
+  private api: any; // Will be window.DemoFlowAPI
   private authState: AuthState | null = null;
   private recordingState: PopupRecordingState | null = null;
   private timer: number | null = null;
   private startTime: number | null = null;
   
   constructor() {
-    this.authManager = AuthManager.getInstance();
     this.setupEventListeners();
     this.loadState();
   }
@@ -62,12 +66,41 @@ class DemoFlowPopup {
 
   private async loadState(): Promise<void> {
     try {
-      // Initialize auth manager and get auth state
-      await this.authManager.initialize();
-      this.authState = this.authManager.getAuthState();
+      // Wait for API to be available
+      const checkAPI = () => {
+        if ((globalThis as any).DemoFlowAPI) {
+          this.api = (globalThis as any).DemoFlowAPI;
+          this.initializeWithAPI();
+        } else {
+          setTimeout(checkAPI, 100);
+        }
+      };
+      checkAPI();
+    } catch (error) {
+      console.error('Failed to load popup state:', error);
+      this.updateUI();
+    }
+  }
+
+  private async initializeWithAPI(): Promise<void> {
+    try {
+      await this.api.initialize();
+      
+      // Always validate token freshness when popup opens
+      const authState = this.api.getAuthState();
+      if (authState.isAuthenticated) {
+        console.log('Checking if stored token is still valid...');
+        const validToken = await this.api.getValidToken();
+        if (!validToken) {
+          console.log('Stored token is expired, clearing auth state');
+          await this.api.clearAuthState();
+        }
+      }
+      
+      this.authState = this.api.getAuthState();
       
       // Set up auth state listener
-      this.authManager.addListener((newState: AuthState) => {
+      this.api.addListener((newState: AuthState) => {
         this.authState = newState;
         this.updateUI();
       });
@@ -84,7 +117,7 @@ class DemoFlowPopup {
       // Update UI
       this.updateUI();
     } catch (error) {
-      console.error('Failed to load popup state:', error);
+      console.error('Failed to initialize popup with API:', error);
       this.updateUI();
     }
   }
@@ -100,15 +133,19 @@ class DemoFlowPopup {
 
   private async handleConnect(): Promise<void> {
     try {
+      if (!this.api) {
+        this.showError('API not initialized');
+        return;
+      }
+      
       console.log('Starting authentication flow');
-      await this.authManager.triggerAuthFlow();
+      await this.api.triggerAuthFlow();
       console.log('Authentication flow completed');
     } catch (error) {
       console.error('Authentication failed:', error);
       this.showError(`Failed to connect: ${(error as Error).message}`);
     }
   }
-  
 
   private async handleRecord(): Promise<void> {
     if (this.recordingState?.isRecording) {
@@ -368,8 +405,6 @@ class DemoFlowPopup {
 
   private async loadRecentDemos(): Promise<void> {
     try {
-      // This would fetch from your API
-      // For now, show empty state
       const demoList = document.getElementById('demoList') as HTMLElement;
       if (demoList) {
         demoList.innerHTML = `
@@ -416,17 +451,13 @@ class DemoFlowPopup {
     if (descriptionInput) descriptionInput.value = '';
   }
 
-
   private showSuccess(message: string): void {
-    // Simple success notification
     console.log('Success:', message);
     // TODO: Implement toast notifications
   }
 
   private showError(message: string): void {
-    // Simple error notification
     console.error('Error:', message);
-    // TODO: Implement toast notifications
     alert(message); // Temporary
   }
 }

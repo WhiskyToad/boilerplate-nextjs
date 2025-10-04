@@ -1,8 +1,13 @@
 import { NextRequest } from 'next/server';
-import { withAuth } from '@/lib/api/middleware';
-import { apiResponse, apiError } from '@/lib/api/response';
-import { createClient } from '@/lib/supabase/server';
-import { z } from 'zod';
+import { withAuth, apiResponse, apiError, parseRequestBody } from '@/lib/api/middleware';
+import { createClient } from '@supabase/supabase-js';
+import * as z from 'zod';
+import { Database } from '@/lib/supabase/types';
+
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const stepSchema = z.object({
   sequence_order: z.number(),
@@ -19,8 +24,8 @@ const bulkStepsSchema = z.object({
 });
 
 export const GET = withAuth(async (request: NextRequest, user: any, context: { params: { id: string } }) => {
-  const supabase = await createClient();
-  const demoId = context.params.id;
+  const params = await context.params;
+  const demoId = params.id;
 
   // Verify demo ownership
   const { data: demo, error: demoError } = await supabase
@@ -49,8 +54,8 @@ export const GET = withAuth(async (request: NextRequest, user: any, context: { p
 });
 
 export const POST = withAuth(async (request: NextRequest, user: any, context: { params: { id: string } }) => {
-  const supabase = await createClient();
-  const demoId = context.params.id;
+  const params = await context.params;
+  const demoId = params.id;
 
   // Verify demo ownership
   const { data: demo, error: demoError } = await supabase
@@ -65,15 +70,13 @@ export const POST = withAuth(async (request: NextRequest, user: any, context: { 
   }
 
   // Parse request body
-  let body;
-  try {
-    body = await request.json();
-    bulkStepsSchema.parse(body);
-  } catch (error) {
-    return apiError('Invalid request data', 400);
+  const body = await parseRequestBody(request);
+  
+  if (!body.steps || !Array.isArray(body.steps)) {
+    return apiError('Steps array is required', 400);
   }
 
-  const { steps, replace_existing } = body;
+  const { steps, replace_existing = false } = body;
 
   try {
     // If replacing existing, delete all current steps
@@ -84,12 +87,15 @@ export const POST = withAuth(async (request: NextRequest, user: any, context: { 
         .eq('demo_id', demoId);
     }
 
-    // Insert new steps
-    const stepsToInsert = steps.map((step: any) => ({
-      ...step,
-      demo_id: demoId,
-      created_at: new Date().toISOString(),
-    }));
+    // Insert new steps - remove any client-generated id fields since database auto-generates UUIDs
+    const stepsToInsert = steps.map((step: any) => {
+      const { id, ...stepWithoutId } = step; // Remove id field
+      return {
+        ...stepWithoutId,
+        demo_id: demoId,
+        created_at: new Date().toISOString(),
+      };
+    });
 
     const { data: insertedSteps, error: insertError } = await supabase
       .from('demo_steps')

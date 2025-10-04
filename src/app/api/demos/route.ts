@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { withAuth, apiResponse, apiError, parseRequestBody } from '@/lib/api/middleware'
 import { createClient } from '@supabase/supabase-js'
-import { z } from 'zod'
+import * as z from 'zod'
 import { Database } from '@/lib/supabase/types'
 
 const supabase = createClient<Database>(
@@ -63,7 +63,19 @@ export const GET = withAuth(async (request: NextRequest, user: any, context: { p
 
 export const POST = withAuth(async (request: NextRequest, user: any, context: { params?: any }) => {
   const body = await parseRequestBody(request)
-  const validatedData = createDemoSchema.parse(body)
+  
+  // Simple validation instead of Zod for now
+  if (!body.title || typeof body.title !== 'string' || body.title.trim().length === 0) {
+    return apiError('Title is required', 400);
+  }
+  
+  const validatedData = {
+    title: body.title.trim(),
+    description: body.description || '',
+    recording_data: body.recording_data || {},
+    settings: body.settings || {},
+    brand_settings: body.brand_settings || {}
+  }
 
   const { data: demo, error } = await supabase
     .from("demos")

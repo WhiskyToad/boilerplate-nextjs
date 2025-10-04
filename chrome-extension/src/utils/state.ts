@@ -123,7 +123,7 @@ export class RecordingState {
   }
 
   private generateStepId(): string {
-    return `step_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return crypto.randomUUID();
   }
 
   // Serialization for storage
