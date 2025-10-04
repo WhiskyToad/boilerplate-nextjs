@@ -1,4 +1,3 @@
-import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 
 // CSRF Token management
@@ -8,9 +7,11 @@ export class CSRFProtection {
   private static readonly TOKEN_COOKIE = 'csrf-token'
   private static readonly SESSION_KEY = 'csrf-secret'
 
-  // Generate a cryptographically secure token
+  // Generate a cryptographically secure token using Web Crypto API
   static generateToken(): string {
-    return crypto.randomBytes(this.TOKEN_LENGTH).toString('hex')
+    const array = new Uint8Array(this.TOKEN_LENGTH)
+    crypto.getRandomValues(array)
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
   }
 
   // Generate CSRF token pair (secret and token)
@@ -21,27 +22,48 @@ export class CSRFProtection {
   }
 
   // Verify CSRF token
-  static verifyToken(token: string, secret: string, userAgent?: string): boolean {
+  static async verifyToken(token: string, secret: string, userAgent?: string): Promise<boolean> {
     if (!token || !secret) return false
     
-    // Basic verification - in production, you might want more sophisticated validation
-    const expectedToken = crypto
-      .createHmac('sha256', secret)
-      .update(userAgent || '')
-      .digest('hex')
+    // Basic verification using Web Crypto API
+    const expectedToken = await this.createToken(secret, userAgent)
     
-    return crypto.timingSafeEqual(
-      Buffer.from(token, 'hex'),
-      Buffer.from(expectedToken, 'hex')
+    return this.timingSafeEqual(
+      new TextEncoder().encode(token),
+      new TextEncoder().encode(expectedToken)
     )
   }
 
-  // Create CSRF token for client
-  static createToken(secret: string, userAgent?: string): string {
-    return crypto
-      .createHmac('sha256', secret)
-      .update(userAgent || '')
-      .digest('hex')
+  // Create CSRF token for client using Web Crypto API
+  static async createToken(secret: string, userAgent?: string): Promise<string> {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      new TextEncoder().encode(userAgent || '')
+    )
+    
+    return Array.from(new Uint8Array(signature), byte => 
+      byte.toString(16).padStart(2, '0')
+    ).join('')
+  }
+
+  // Timing-safe equality comparison
+  static timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false
+    
+    let result = 0
+    for (let i = 0; i < a.length; i++) {
+      result |= a[i] ^ b[i]
+    }
+    return result === 0
   }
 
   // Extract CSRF token from request
@@ -83,7 +105,7 @@ export class CSRFProtection {
 
     // Verify token
     const userAgent = request.headers.get('user-agent') || ''
-    const isValid = this.verifyToken(token, secret, userAgent)
+    const isValid = await this.verifyToken(token, secret, userAgent)
 
     return {
       valid: isValid,
@@ -105,9 +127,14 @@ export class DoubleSubmitCSRF {
   private static readonly COOKIE_NAME = 'csrf-token'
   private static readonly HEADER_NAME = 'x-csrf-token'
 
-  // Generate token for double submit pattern
+  // Generate token for double submit pattern using Web Crypto API
   static generateToken(): string {
-    return crypto.randomBytes(32).toString('base64url')
+    const array = new Uint8Array(32)
+    crypto.getRandomValues(array)
+    return btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '')
   }
 
   // Validate double submit CSRF
@@ -117,10 +144,21 @@ export class DoubleSubmitCSRF {
 
     if (!cookieToken || !headerToken) return false
 
-    return crypto.timingSafeEqual(
-      Buffer.from(cookieToken, 'base64url'),
-      Buffer.from(headerToken, 'base64url')
-    )
+    // Convert base64url to Uint8Array for timing-safe comparison
+    const decodeBase64Url = (str: string) => {
+      const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=')
+      return new Uint8Array(atob(padded).split('').map(c => c.charCodeAt(0)))
+    }
+
+    try {
+      const cookieBytes = decodeBase64Url(cookieToken)
+      const headerBytes = decodeBase64Url(headerToken)
+      
+      return CSRFProtection.timingSafeEqual(cookieBytes, headerBytes)
+    } catch {
+      return false
+    }
   }
 
   // Create cookie options for CSRF token

@@ -46,7 +46,18 @@ export default function Home() {
   }
 
   const handleAuthSuccess = () => {
-    router.push('/dashboard')
+    // Check if this is an extension auth request
+    const urlParams = new URLSearchParams(window.location.search);
+    const isExtension = urlParams.get('extension') === 'true';
+    const redirectUrl = urlParams.get('redirect');
+    
+    if (isExtension) {
+      // Redirect to auth-success page for extension to capture
+      router.push(`/auth-success?redirect=${encodeURIComponent(redirectUrl || '')}`);
+    } else {
+      // Normal web app flow
+      router.push('/dashboard');
+    }
   }
 
   if (showAuth) {

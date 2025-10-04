@@ -88,35 +88,131 @@ class DemoFlowPopup {
       const currentTab = await this.getCurrentTab();
       const authUrl = `http://localhost:3000/login?extension=true&redirect=${encodeURIComponent(currentTab.url!)}`;
       
+      console.log('Opening auth URL:', authUrl);
+      
       chrome.tabs.create({ url: authUrl }, (tab) => {
-        // Listen for successful authentication
-        const listener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _updatedTab: chrome.tabs.Tab) => {
-          if (tabId === tab.id && changeInfo.url && changeInfo.url.includes('auth-success')) {
-            // Extract token from URL
-            const url = new URL(changeInfo.url);
-            const token = url.searchParams.get('token');
-            const userData = url.searchParams.get('user');
+        console.log('Auth tab created:', tab.id);
+        
+        let authCheckInterval: number;
+        
+        // Listen for URL changes
+        const urlListener = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _updatedTab: chrome.tabs.Tab) => {
+          console.log('Tab updated:', tabId, changeInfo.url);
+          
+          if (tabId === tab.id && changeInfo.url) {
+            console.log('Auth tab URL changed to:', changeInfo.url);
             
-            if (token) {
-              chrome.runtime.sendMessage({
-                type: 'AUTHENTICATE',
-                data: { token, user: JSON.parse(userData || '{}') }
-              }).then(() => {
-                chrome.tabs.remove(tab.id!);
-                this.isAuthenticated = true;
-                this.updateUI();
-              });
+            if (changeInfo.url.includes('auth-success')) {
+              console.log('Auth success page detected');
+              
+              // Extract token from URL
+              const url = new URL(changeInfo.url);
+              const token = url.searchParams.get('token');
+              const userData = url.searchParams.get('user');
+              
+              console.log('Token from URL:', token ? 'Found' : 'Not found');
+              console.log('User data from URL:', userData);
+              
+              if (token) {
+                this.completeAuthentication(token, userData, tab.id!);
+                chrome.tabs.onUpdated.removeListener(urlListener);
+                if (authCheckInterval) clearInterval(authCheckInterval);
+              }
             }
-            
-            chrome.tabs.onUpdated.removeListener(listener);
           }
         };
         
-        chrome.tabs.onUpdated.addListener(listener);
+        // Also periodically check for auth data in the tab
+        authCheckInterval = window.setInterval(async () => {
+          try {
+            // Check if tab still exists
+            const tabInfo = await chrome.tabs.get(tab.id!);
+            if (!tabInfo) {
+              clearInterval(authCheckInterval);
+              return;
+            }
+            
+            // Inject script to check for auth data
+            if (tabInfo.url?.includes('auth-success')) {
+              console.log('Checking auth-success page for auth data');
+              
+              chrome.scripting.executeScript({
+                target: { tabId: tab.id! },
+                func: () => {
+                  // Check localStorage for auth data
+                  const authDataStr = localStorage.getItem('demoflow_auth_temp');
+                  if (authDataStr) {
+                    return JSON.parse(authDataStr);
+                  }
+                  
+                  // Check URL params
+                  const url = new URL(window.location.href);
+                  const token = url.searchParams.get('token');
+                  const userData = url.searchParams.get('user');
+                  
+                  if (token) {
+                    return {
+                      token,
+                      user: userData ? JSON.parse(userData) : {}
+                    };
+                  }
+                  
+                  return null;
+                }
+              }, (results) => {
+                if (results && results[0] && results[0].result) {
+                  const authData = results[0].result;
+                  console.log('Found auth data via script injection:', authData);
+                  
+                  if (authData.token) {
+                    this.completeAuthentication(authData.token, JSON.stringify(authData.user), tab.id!);
+                    chrome.tabs.onUpdated.removeListener(urlListener);
+                    clearInterval(authCheckInterval);
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error checking auth tab:', error);
+          }
+        }, 1000);
+        
+        chrome.tabs.onUpdated.addListener(urlListener);
+        
+        // Clean up after 2 minutes
+        setTimeout(() => {
+          chrome.tabs.onUpdated.removeListener(urlListener);
+          if (authCheckInterval) clearInterval(authCheckInterval);
+        }, 120000);
       });
     } catch (error) {
       console.error('Authentication failed:', error);
       this.showError('Failed to connect. Please try again.');
+    }
+  }
+  
+  private async completeAuthentication(token: string, userData: string | null, tabId: number): Promise<void> {
+    try {
+      console.log('Completing authentication with token:', token);
+      
+      const response = await chrome.runtime.sendMessage({
+        type: 'AUTHENTICATE',
+        data: { token, user: JSON.parse(userData || '{}') }
+      });
+      
+      if (response?.success !== false) {
+        console.log('Authentication successful');
+        chrome.tabs.remove(tabId);
+        this.isAuthenticated = true;
+        this.updateUI();
+        this.showSuccess('Successfully connected to account!');
+      } else {
+        console.error('Authentication failed:', response);
+        this.showError('Authentication failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error completing authentication:', error);
+      this.showError('Authentication failed. Please try again.');
     }
   }
 

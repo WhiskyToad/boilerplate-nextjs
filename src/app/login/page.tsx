@@ -11,13 +11,20 @@ function LoginPageContent() {
   const { user, loading } = useAuth()
   
   const redirectUrl = searchParams.get('redirect') || '/dashboard'
+  const isExtension = searchParams.get('extension') === 'true'
 
   useEffect(() => {
     // If user is already logged in, redirect to intended destination
     if (!loading && user) {
-      router.push(redirectUrl)
+      if (isExtension) {
+        // Redirect to auth-callback page for extension to capture
+        router.push(`/auth-callback?redirect=${encodeURIComponent(redirectUrl)}`)
+      } else {
+        // Normal web app flow
+        router.push(redirectUrl)
+      }
     }
-  }, [user, loading, router, redirectUrl])
+  }, [user, loading, router, redirectUrl, isExtension])
 
   if (loading) {
     return (
@@ -40,19 +47,31 @@ function LoginPageContent() {
   }
 
   const handleAuthSuccess = () => {
-    router.push(redirectUrl)
+    if (isExtension) {
+      // Redirect to auth-callback page for extension to capture
+      router.push(`/auth-callback?redirect=${encodeURIComponent(redirectUrl)}`)
+    } else {
+      // Normal web app flow
+      router.push(redirectUrl)
+    }
   }
 
   return (
     <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <button
-            onClick={() => router.push('/')}
-            className="text-base-content/70 hover:text-base-content text-sm cursor-pointer"
-          >
-            ← Back to home
-          </button>
+          {isExtension ? (
+            <div className="text-primary text-sm font-medium">
+              🔗 Connecting to DemoFlow Extension
+            </div>
+          ) : (
+            <button
+              onClick={() => router.push('/')}
+              className="text-base-content/70 hover:text-base-content text-sm cursor-pointer"
+            >
+              ← Back to home
+            </button>
+          )}
         </div>
         <SimpleAuth
           mode="signin"
