@@ -295,17 +295,23 @@ class DemoFlowBackground {
     const state = this.recordingState.getState();
     if (!state.isRecording) return;
 
+    console.log(`🛑 Stopping recording... (${state.steps.length} steps to save)`);
+
     try {
       if (state.steps.length > 0 && state.demoId && this.api) {
+        console.log(`💾 Saving ${state.steps.length} steps to demo ${state.demoId}...`);
         await this.api.saveSteps(state.demoId, state.steps);
+        console.log('✅ Steps saved successfully!');
       }
 
       if (state.demoId && this.api) {
+        console.log(`📊 Updating demo metadata...`);
         await this.api.updateDemo(state.demoId, {
           status: 'draft',
           total_steps: state.steps.length,
           estimated_duration: this.calculateDuration(state.steps)
         });
+        console.log('✅ Demo metadata updated!');
       }
 
       const tabs = await chrome.tabs.query({});
@@ -359,13 +365,8 @@ class DemoFlowBackground {
 
     this.recordingState.addStep(step);
 
-    if (state.steps.length % 5 === 0 && state.demoId && this.api) {
-      try {
-        await this.api.saveSteps(state.demoId, [step]);
-      } catch (error) {
-        console.warn('Failed to auto-save step:', error);
-      }
-    }
+    // Auto-save removed - all steps will be saved when recording stops
+    console.log(`📝 Step ${state.steps.length + 1} captured (not saved yet)`);
   }
 
   private async handleTabUpdate(_tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {

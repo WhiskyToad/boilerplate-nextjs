@@ -402,12 +402,14 @@ class DemoFlowCombinedAPI {
 
   public async saveSteps(demoId: string, steps: APIStepData | APIStepData[]): Promise<APIStepData[]> {
     const stepsArray = Array.isArray(steps) ? steps : [steps];
-    
+
+    console.log(`💾 Saving ${stepsArray.length} steps (replace_existing: true)`);
+
     const response = await this.request(`/api/demos/${demoId}/steps`, {
       method: 'POST',
       body: JSON.stringify({
         steps: stepsArray,
-        replace_existing: false,
+        replace_existing: true, // Always replace to avoid duplicate sequence_order errors
       }),
     });
     

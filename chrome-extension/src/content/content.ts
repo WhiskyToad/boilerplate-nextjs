@@ -43,7 +43,7 @@ class DemoFlowCapture {
   private lastInteraction: Element | null = null;
   private overlay: HTMLElement | null = null;
   private instanceId: string;
-  
+
   constructor() {
     this.instanceId = `capture_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     this.setupEventListeners();
@@ -64,7 +64,7 @@ class DemoFlowCapture {
     document.addEventListener('change', this.handleChange.bind(this), true);
     document.addEventListener('submit', this.handleSubmit.bind(this), true);
     document.addEventListener('keydown', this.handleKeydown.bind(this), true);
-    
+
     // Capture hover for better UX (throttled)
     document.addEventListener('mouseover', this.throttle(this.handleMouseover.bind(this), 100), true);
   }

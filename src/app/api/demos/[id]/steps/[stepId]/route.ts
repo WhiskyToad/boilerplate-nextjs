@@ -1,8 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { z } from "zod";
-import { Database } from "@/lib/supabase/types";
+import { NextRequest } from 'next/server';
+import { withAuth, apiResponse, apiError, parseRequestBody } from '@/lib/api/middleware';
+import { createClient } from '@supabase/supabase-js';
+import * as z from 'zod';
+import { Database } from '@/lib/supabase/types';
+
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const updateStepSchema = z.object({
   sequence_order: z.number().min(0).optional(),
@@ -15,7 +20,7 @@ const updateStepSchema = z.object({
   timing_data: z.record(z.any()).optional(),
 });
 
-async function verifyDemoOwnership(supabase: any, demoId: string, userId: string) {
+async function verifyDemoOwnership(demoId: string, userId: string) {
   const { data: demo, error } = await supabase
     .from("demos")
     .select("id")
@@ -26,213 +31,122 @@ async function verifyDemoOwnership(supabase: any, demoId: string, userId: string
   return { exists: !!demo && !error, demo };
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string; stepId: string } }
-) {
-  try {
-    const supabase = createRouteHandlerClient<Database>({
-      cookies,
-    });
+export const GET = withAuth(async (request: NextRequest, user: any, context: { params: { id: string; stepId: string } }) => {
+  const params = await context.params;
+  const demoId = params.id;
+  const stepId = params.stepId;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Verify demo ownership
-    const { exists } = await verifyDemoOwnership(supabase, params.id, session.user.id);
-    if (!exists) {
-      return NextResponse.json(
-        { error: "Demo not found" },
-        { status: 404 }
-      );
-    }
-
-    const { data: step, error } = await supabase
-      .from("demo_steps")
-      .select("*")
-      .eq("id", params.stepId)
-      .eq("demo_id", params.id)
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Step not found" },
-          { status: 404 }
-        );
-      }
-
-      console.error("Error fetching demo step:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch demo step" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ step });
-  } catch (error) {
-    console.error("Unexpected error in GET /api/demos/[id]/steps/[stepId]:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  // Verify demo ownership
+  const { exists } = await verifyDemoOwnership(demoId, user.id);
+  if (!exists) {
+    return apiError('Demo not found', 404);
   }
-}
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string; stepId: string } }
-) {
+  const { data: step, error } = await supabase
+    .from("demo_steps")
+    .select("*")
+    .eq("id", stepId)
+    .eq("demo_id", demoId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return apiError('Step not found', 404);
+    }
+
+    console.error("Error fetching demo step:", error);
+    return apiError('Failed to fetch demo step', 500);
+  }
+
+  return apiResponse({ step });
+});
+
+export const PATCH = withAuth(async (request: NextRequest, user: any, context: { params: { id: string; stepId: string } }) => {
+  const params = await context.params;
+  const demoId = params.id;
+  const stepId = params.stepId;
+
+  // Verify demo ownership
+  const { exists } = await verifyDemoOwnership(demoId, user.id);
+  if (!exists) {
+    return apiError('Demo not found', 404);
+  }
+
+  const body = await parseRequestBody(request);
+
   try {
-    const supabase = createRouteHandlerClient<Database>({
-      cookies,
-    });
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Verify demo ownership
-    const { exists } = await verifyDemoOwnership(supabase, params.id, session.user.id);
-    if (!exists) {
-      return NextResponse.json(
-        { error: "Demo not found" },
-        { status: 404 }
-      );
-    }
-
-    const body = await request.json();
     const validatedData = updateStepSchema.parse(body);
 
     // Check if step exists
     const { data: existingStep, error: fetchError } = await supabase
       .from("demo_steps")
       .select("id")
-      .eq("id", params.stepId)
-      .eq("demo_id", params.id)
+      .eq("id", stepId)
+      .eq("demo_id", demoId)
       .single();
 
     if (fetchError || !existingStep) {
-      return NextResponse.json(
-        { error: "Step not found" },
-        { status: 404 }
-      );
+      return apiError('Step not found', 404);
     }
 
     const { data: step, error } = await supabase
       .from("demo_steps")
       .update(validatedData)
-      .eq("id", params.stepId)
-      .eq("demo_id", params.id)
+      .eq("id", stepId)
+      .eq("demo_id", demoId)
       .select()
       .single();
 
     if (error) {
       console.error("Error updating demo step:", error);
-      return NextResponse.json(
-        { error: "Failed to update demo step" },
-        { status: 500 }
-      );
+      return apiError('Failed to update demo step', 500);
     }
 
-    return NextResponse.json({ step });
+    return apiResponse({ step });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
-        { status: 400 }
-      );
+      return apiError('Invalid input', 400, 'VALIDATION_ERROR', error.errors);
     }
-
-    console.error("Unexpected error in PATCH /api/demos/[id]/steps/[stepId]:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    throw error;
   }
-}
+});
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string; stepId: string } }
-) {
-  try {
-    const supabase = createRouteHandlerClient<Database>({
-      cookies,
-    });
+export const DELETE = withAuth(async (request: NextRequest, user: any, context: { params: { id: string; stepId: string } }) => {
+  const params = await context.params;
+  const demoId = params.id;
+  const stepId = params.stepId;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Verify demo ownership
-    const { exists } = await verifyDemoOwnership(supabase, params.id, session.user.id);
-    if (!exists) {
-      return NextResponse.json(
-        { error: "Demo not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if step exists
-    const { data: existingStep, error: fetchError } = await supabase
-      .from("demo_steps")
-      .select("id, sequence_order")
-      .eq("id", params.stepId)
-      .eq("demo_id", params.id)
-      .single();
-
-    if (fetchError || !existingStep) {
-      return NextResponse.json(
-        { error: "Step not found" },
-        { status: 404 }
-      );
-    }
-
-    const { error } = await supabase
-      .from("demo_steps")
-      .delete()
-      .eq("id", params.stepId)
-      .eq("demo_id", params.id);
-
-    if (error) {
-      console.error("Error deleting demo step:", error);
-      return NextResponse.json(
-        { error: "Failed to delete demo step" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ 
-      message: `Step ${existingStep.sequence_order} deleted successfully` 
-    });
-  } catch (error) {
-    console.error("Unexpected error in DELETE /api/demos/[id]/steps/[stepId]:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  // Verify demo ownership
+  const { exists } = await verifyDemoOwnership(demoId, user.id);
+  if (!exists) {
+    return apiError('Demo not found', 404);
   }
-}
+
+  // Check if step exists
+  const { data: existingStep, error: fetchError } = await supabase
+    .from("demo_steps")
+    .select("id, sequence_order")
+    .eq("id", stepId)
+    .eq("demo_id", demoId)
+    .single();
+
+  if (fetchError || !existingStep) {
+    return apiError('Step not found', 404);
+  }
+
+  const { error } = await supabase
+    .from("demo_steps")
+    .delete()
+    .eq("id", stepId)
+    .eq("demo_id", demoId);
+
+  if (error) {
+    console.error("Error deleting demo step:", error);
+    return apiError('Failed to delete demo step', 500);
+  }
+
+  return apiResponse(
+    { message: `Step ${existingStep.sequence_order} deleted successfully` },
+    `Step ${existingStep.sequence_order} deleted successfully`
+  );
+});
