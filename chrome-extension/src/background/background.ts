@@ -1,123 +1,42 @@
-// DemoFlow Background Script - No Module Imports
-// Handles cross-tab coordination, demo state management, and API communication
+// DemoFlow Background Script - Modular Architecture
+// Main entry point that orchestrates all modules
 
-// Import combined API script for service worker
+// Import combined API script for service worker (includes utilities)
 declare function importScripts(...urls: string[]): void;
 importScripts('../utils/combined-api.js');
 
-interface DemoData {
-  title?: string;
-  description?: string;
-}
+// Import all background modules (compiled to JS)
+importScripts('./types.js');
+importScripts('./recording-state.js');
+importScripts('./screenshot-manager.js');
+importScripts('./tab-manager.js');
+importScripts('./recording-manager.js');
+importScripts('./message-router.js');
 
-interface BackgroundStepData {
-  type?: string;
-  element?: any;
-  annotations?: any;
-  interactions?: any;
-}
-
-interface MessageData {
-  type: string;
-  data?: any;
-}
-
-interface DemoRecordingState {
-  isRecording: boolean;
-  isPaused: boolean;
-  demoId: string | null;
-  startTabId: number | null;
-  startUrl: string | null;
-  startTime: number | null;
-  steps: any[];
-  currentStep: number;
-}
-
-class SimpleRecordingState {
-  private state: DemoRecordingState;
-
-  constructor() {
-    this.state = this.getDefaultState();
-  }
-
-  getState(): DemoRecordingState {
-    return { ...this.state };
-  }
-
-  startRecording(data: any): void {
-    this.state = {
-      isRecording: true,
-      isPaused: false,
-      demoId: data.demoId,
-      startTabId: data.startTabId,
-      startUrl: data.startUrl,
-      startTime: Date.now(),
-      steps: data.steps || [],
-      currentStep: 0,
-    };
-  }
-
-  stopRecording(): void {
-    this.state = this.getDefaultState();
-  }
-
-  pauseRecording(): void {
-    if (this.state.isRecording) {
-      this.state.isPaused = true;
-    }
-  }
-
-  resumeRecording(): void {
-    if (this.state.isRecording) {
-      this.state.isPaused = false;
-    }
-  }
-
-  addStep(step: any): void {
-    if (this.state.isRecording && !this.state.isPaused) {
-      this.state.steps.push({
-        ...step,
-        id: this.generateStepId(),
-      });
-      this.state.currentStep = this.state.steps.length - 1;
-    }
-  }
-
-  private generateStepId(): string {
-    return crypto.randomUUID();
-  }
-
-  private getDefaultState(): DemoRecordingState {
-    return {
-      isRecording: false,
-      isPaused: false,
-      demoId: null,
-      startTabId: null,
-      startUrl: null,
-      startTime: null,
-      steps: [],
-      currentStep: 0,
-    };
-  }
-}
+// Access utilities and modules from globalThis
+const bgGlobal = globalThis as any;
+const BG_CONFIG = bgGlobal.CONFIG;
+const BG_Logger = bgGlobal.BackgroundLogger;
 
 class DemoFlowBackground {
-  private recordingState: SimpleRecordingState;
-  private api: any; // Will be globalThis.DemoFlowAPI
+  private api: any;
+  private recordingManager: any;
+  private messageRouter: any;
 
   constructor() {
-    this.recordingState = new SimpleRecordingState();
-    this.setupEventListeners();
     this.initializeAPI();
+    this.setupEventListeners();
   }
 
   private async initializeAPI(): Promise<void> {
-    // Wait for the API to be loaded
     const checkAPI = () => {
       if ((globalThis as any).DemoFlowAPI) {
         this.api = (globalThis as any).DemoFlowAPI;
         this.api.initialize();
-        console.log('Background script API initialized');
+        BG_Logger.info('Background script API initialized');
+
+        // Initialize managers after API is ready
+        this.initializeManagers();
       } else {
         setTimeout(checkAPI, 100);
       }
@@ -125,442 +44,54 @@ class DemoFlowBackground {
     checkAPI();
   }
 
+  private initializeManagers(): void {
+    // Get the RecordingManager and MessageRouter classes from globalThis
+    const RecordingManager = (globalThis as any).RecordingManager;
+    const MessageRouter = (globalThis as any).MessageRouter;
+
+    this.recordingManager = new RecordingManager(this.api, BG_Logger, BG_CONFIG);
+    this.messageRouter = new MessageRouter(this.api, BG_Logger, this.recordingManager);
+
+    // Setup message routing
+    this.messageRouter.setupListeners();
+  }
+
   private setupEventListeners(): void {
-    chrome.runtime.onMessage.addListener((message: MessageData, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) => {
-      this.handleMessage(message, sender, sendResponse);
-      return true;
+    // Tab update events
+    chrome.tabs.onUpdated.addListener((
+      tabId: number,
+      changeInfo: chrome.tabs.TabChangeInfo,
+      tab: chrome.tabs.Tab
+    ) => {
+      if (this.recordingManager) {
+        this.recordingManager.handleTabUpdate(tabId, changeInfo, tab);
+      }
     });
 
-    chrome.tabs.onUpdated.addListener((tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
-      this.handleTabUpdate(tabId, changeInfo, tab);
+    // Tab removed events
+    chrome.tabs.onRemoved.addListener((
+      tabId: number,
+      _removeInfo: chrome.tabs.TabRemoveInfo
+    ) => {
+      if (this.recordingManager) {
+        this.recordingManager.handleTabRemoved(tabId);
+      }
     });
 
-    chrome.tabs.onRemoved.addListener((tabId: number, removeInfo: chrome.tabs.TabRemoveInfo) => {
-      this.handleTabRemoved(tabId, removeInfo);
-    });
-
-    chrome.webNavigation.onCompleted.addListener((details: chrome.webNavigation.WebNavigationFramedCallbackDetails) => {
-      this.handleNavigationCompleted(details);
-    });
-  }
-
-  private async handleMessage(message: MessageData, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void): Promise<void> {
-    try {
-      switch (message.type) {
-        case 'START_RECORDING':
-          const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (!activeTab) {
-            sendResponse({ success: false, error: 'No active tab found' });
-            return;
-          }
-          await this.startRecording(message.data as DemoData, activeTab);
-          sendResponse({ success: true });
-          break;
-
-        case 'STOP_RECORDING':
-          await this.stopRecording();
-          sendResponse({ success: true });
-          break;
-
-        case 'PAUSE_RECORDING':
-          this.pauseRecording();
-          sendResponse({ success: true });
-          break;
-
-        case 'RESUME_RECORDING':
-          this.resumeRecording();
-          sendResponse({ success: true });
-          break;
-
-        case 'ADD_STEP':
-          await this.addStep(message.data as BackgroundStepData, sender.tab!);
-          sendResponse({ success: true });
-          break;
-
-        case 'GET_RECORDING_STATE':
-          sendResponse({
-            success: true,
-            data: this.recordingState.getState()
-          });
-          break;
-
-        case 'AUTH_SUCCESS_FROM_WEB':
-          console.log('🎯 [BACKGROUND] Received auth from web page');
-          console.log('🎯 [BACKGROUND] User:', message.data.user?.email);
-          await this.handleAuthentication(message.data);
-
-          try {
-            chrome.runtime.sendMessage({
-              type: 'AUTH_COMPLETED',
-              data: message.data
-            });
-            console.log('🎯 [BACKGROUND] Notified popup of auth completion');
-          } catch (error) {
-            console.log('⚠️ [BACKGROUND] Popup not open, auth will be detected on next open');
-          }
-
-          sendResponse({ success: true });
-          break;
-
-        case 'GET_AUTH_STATE':
-          if (this.api) {
-            sendResponse({
-              success: true,
-              data: this.api.getAuthState()
-            });
-          } else {
-            sendResponse({ success: false, error: 'API not initialized' });
-          }
-          break;
-
-        default:
-          console.warn('Unknown message type:', message.type);
-          sendResponse({ success: false, error: 'Unknown message type' });
-      }
-    } catch (error) {
-      console.error('Error handling message:', error);
-      sendResponse({ success: false, error: (error as Error).message });
-    }
-  }
-
-  private async startRecording(demoData: DemoData, tab: chrome.tabs.Tab): Promise<void> {
-    if (!this.api) {
-      throw new Error('API not initialized');
-    }
-
-    if (!this.api.isAuthenticated()) {
-      throw new Error('Authentication required - please log in first');
-    }
-
-    await this.api.loadConfig();
-
-    try {
-      const demo = await this.api.createDemo({
-        title: demoData.title || `Demo recorded on ${new Date().toLocaleDateString()}`,
-        description: demoData.description || '',
-        settings: {
-          startUrl: tab.url,
-          startTitle: tab.title,
-          userAgent: navigator.userAgent,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      this.recordingState.startRecording({
-        demoId: demo.id,
-        startTabId: tab.id!,
-        startUrl: tab.url!,
-        steps: []
-      });
-
-      // Capture initial screenshot
-      setTimeout(async () => {
-        await this.addStep({
-          type: 'initial',
-          element: {
-            type: 'page',
-            url: tab.url || '',
-            title: tab.title || '',
-            viewport: {
-              width: 1920,
-              height: 1080
-            }
-          }
-        }, tab);
-      }, 1000);
-
-      // Inject content script and start capture
-      const contentScriptReady = await this.ensureContentScriptInjected(tab.id!);
-
-      if (contentScriptReady) {
-        try {
-          await chrome.tabs.sendMessage(tab.id!, {
-            type: 'START_CAPTURE',
-            data: { demoId: demo.id }
-          });
-        } catch (error) {
-          console.error('Failed to start content script capture:', error);
-        }
-      }
-
-      this.broadcastStateUpdate();
-
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      throw error;
-    }
-  }
-
-  private async stopRecording(): Promise<void> {
-    const state = this.recordingState.getState();
-    if (!state.isRecording) return;
-
-    console.log(`🛑 Stopping recording... (${state.steps.length} steps to save)`);
-
-    try {
-      if (state.steps.length > 0 && state.demoId && this.api) {
-        console.log(`💾 Saving ${state.steps.length} steps to demo ${state.demoId}...`);
-        await this.api.saveSteps(state.demoId, state.steps);
-        console.log('✅ Steps saved successfully!');
-      }
-
-      if (state.demoId && this.api) {
-        console.log(`📊 Updating demo metadata...`);
-        await this.api.updateDemo(state.demoId, {
-          status: 'draft',
-          total_steps: state.steps.length,
-          estimated_duration: this.calculateDuration(state.steps)
-        });
-        console.log('✅ Demo metadata updated!');
-      }
-
-      const tabs = await chrome.tabs.query({});
-      for (const tab of tabs) {
-        try {
-          await chrome.tabs.sendMessage(tab.id!, { type: 'STOP_CAPTURE' });
-        } catch (e) {
-          // Tab might not have content script
-        }
-      }
-
-      this.recordingState.stopRecording();
-      this.broadcastStateUpdate();
-
-    } catch (error) {
-      console.error('Error stopping recording:', error);
-      throw error;
-    }
-  }
-
-  private pauseRecording(): void {
-    this.recordingState.pauseRecording();
-    this.broadcastStateUpdate();
-  }
-
-  private resumeRecording(): void {
-    this.recordingState.resumeRecording();
-    this.broadcastStateUpdate();
-  }
-
-  private async addStep(stepData: BackgroundStepData, tab: chrome.tabs.Tab): Promise<void> {
-    const state = this.recordingState.getState();
-    if (!state.isRecording || state.isPaused) return;
-
-    // Capture screenshot for this step
-    const screenshot = await this.captureScreenshot(tab.id!);
-
-    const step = {
-      sequence_order: state.steps.length,
-      step_type: stepData.type || 'interaction',
-      element_data: stepData.element || {},
-      annotations: stepData.annotations || {},
-      interactions: stepData.interactions || {},
-      timing_data: {
-        timestamp: Date.now(),
-        url: tab.url || '',
-        title: tab.title || ''
-      },
-      screenshot_url: screenshot
-    };
-
-    this.recordingState.addStep(step);
-
-    // Auto-save removed - all steps will be saved when recording stops
-    console.log(`📝 Step ${state.steps.length + 1} captured (not saved yet)`);
-  }
-
-  private async handleTabUpdate(_tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {
-    const state = this.recordingState.getState();
-    if (!state.isRecording || state.isPaused) return;
-
-    if (changeInfo.status === 'complete' && changeInfo.url) {
-      await this.addStep({
-        type: 'navigation',
-        element: {
-          type: 'navigation',
-          url: tab.url || '',
-          title: tab.title || ''
-        }
-      }, tab);
-    }
-  }
-
-  private handleTabRemoved(tabId: number, _removeInfo: chrome.tabs.TabRemoveInfo): void {
-    const state = this.recordingState.getState();
-    if (state.isRecording && state.startTabId === tabId) {
-      console.log('Recording tab closed, stopping recording');
-      this.stopRecording();
-    }
-  }
-
-  private async handleNavigationCompleted(details: chrome.webNavigation.WebNavigationFramedCallbackDetails): Promise<void> {
-    if (details.frameId !== 0) return;
-
-    const state = this.recordingState.getState();
-    if (!state.isRecording) return;
-
-    console.log(`Navigation completed on tab ${details.tabId}`);
-  }
-
-  private async ensureContentScriptInjected(tabId: number): Promise<boolean> {
-    try {
-      const tab = await chrome.tabs.get(tabId);
-
-      if (!tab.url || this.isRestrictedUrl(tab.url)) {
-        return false;
-      }
-
-      if (await this.isContentScriptReady(tabId)) {
-        return true;
-      }
-
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        files: ['content/content.js']
-      });
-
-      const isReady = await this.waitForContentScript(tabId, 5000);
-      if (!isReady) {
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Failed to inject content script:', error);
-      return false;
-    }
-  }
-
-  private isRestrictedUrl(url: string): boolean {
-    const restrictedProtocols = ['chrome:', 'chrome-extension:', 'moz-extension:', 'edge:', 'opera:'];
-    const restrictedDomains = ['chrome.google.com'];
-
-    return restrictedProtocols.some(protocol => url.startsWith(protocol)) ||
-           restrictedDomains.some(domain => url.includes(domain));
-  }
-
-  private async captureScreenshot(_tabId: number): Promise<string | null> {
-    try {
-      const screenshot = await chrome.tabs.captureVisibleTab({
-        format: 'png',
-        quality: 90
-      });
-
-      if (this.api) {
-        const screenshotUrl = await this.uploadScreenshot(screenshot);
-        return screenshotUrl;
-      }
-
-      return screenshot;
-    } catch (error) {
-      console.error('Failed to capture screenshot:', error);
-      return null;
-    }
-  }
-
-  private async uploadScreenshot(base64Data: string): Promise<string> {
-    try {
-      const response = await fetch(base64Data);
-      const blob = await response.blob();
-
-      const formData = new FormData();
-      formData.append('file', blob, `screenshot-${Date.now()}.png`);
-
-      const uploadResponse = await fetch(`${this.api?.baseUrl}/api/upload/image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${await this.api?.getValidToken()}`
-        },
-        body: formData
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload screenshot');
-      }
-
-      const result = await uploadResponse.json();
-      return result.data?.url || base64Data;
-    } catch (error) {
-      console.error('Failed to upload screenshot:', error);
-      return base64Data;
-    }
-  }
-
-  private async isContentScriptReady(tabId: number): Promise<boolean> {
-    try {
-      const response = await chrome.tabs.sendMessage(tabId, { type: 'PING' });
-      return response && response.success;
-    } catch {
-      return false;
-    }
-  }
-
-  private async waitForContentScript(tabId: number, timeout: number = 5000): Promise<boolean> {
-    const startTime = Date.now();
-    const checkInterval = 100;
-
-    while (Date.now() - startTime < timeout) {
-      if (await this.isContentScriptReady(tabId)) {
-        return true;
-      }
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-    }
-
-    return false;
-  }
-
-  private async handleAuthentication(authData: any): Promise<void> {
-    console.log('💾 [BACKGROUND] Storing authentication data...');
-    console.log('💾 [BACKGROUND] Token present:', !!authData.token);
-    console.log('💾 [BACKGROUND] User:', authData.user?.email);
-
-    try {
-      if (this.api) {
-        await this.api.setAuthData(authData);
-        this.api.notifyAuthCompletion(authData);
-        console.log('✅ [BACKGROUND] Authentication stored successfully!');
-
-        // Verify it was stored
-        const stored = this.api.getAuthState();
-        console.log('✅ [BACKGROUND] Verified stored auth state:', stored.isAuthenticated ? 'AUTHENTICATED' : 'NOT AUTHENTICATED');
-      } else {
-        console.error('❌ [BACKGROUND] API not initialized!');
-      }
-    } catch (error) {
-      console.error('❌ [BACKGROUND] Authentication storage failed:', error);
-      throw error;
-    }
-  }
-
-  private calculateDuration(steps: any[]): number {
-    if (steps.length < 2) return 0;
-    const first = steps[0].timing_data?.timestamp || 0;
-    const last = steps[steps.length - 1].timing_data?.timestamp || 0;
-    return Math.round((last - first) / 1000);
-  }
-
-  private broadcastStateUpdate(): void {
-    const state = this.recordingState.getState();
-
-    chrome.runtime.sendMessage({
-      type: 'STATE_UPDATE',
-      data: state
-    }).catch(() => {
-      // Popup might not be open
-    });
-
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id!, {
-          type: 'STATE_UPDATE',
-          data: state
-        }).catch(() => {
-          // Tab might not have content script
-        });
-      });
+    // Navigation completed events
+    chrome.webNavigation.onCompleted.addListener((
+      details: chrome.webNavigation.WebNavigationFramedCallbackDetails
+    ) => {
+      if (details.frameId !== 0) return;
+
+      const state = this.recordingManager?.getState();
+      if (!state?.isRecording) return;
+
+      BG_Logger.debug(`Navigation completed on tab ${details.tabId}`);
     });
   }
 }
 
+// Initialize
 new DemoFlowBackground();
-console.log('DemoFlow background script initialized');
+BG_Logger.info('DemoFlow background script initialized (modular)');

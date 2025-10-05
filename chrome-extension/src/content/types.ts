@@ -1,0 +1,37 @@
+// Shared types for content script modules
+
+export interface ElementData {
+  tagName: string;
+  id: string;
+  className: string;
+  name: string;
+  type: string;
+  textContent: string;
+  value: string;
+  placeholder: string;
+  alt: string;
+  title: string;
+  href: string;
+  boundingRect: DOMRect;
+  styles: any;
+  selector: string;
+  xpath: string;
+  url: string;
+  viewport: {
+    width: number;
+    height: number;
+    scrollX: number;
+    scrollY: number;
+  };
+}
+
+export interface ContentStepData {
+  type: string;
+  element: ElementData | any;
+  interactions?: any;
+}
+
+export interface MessageData {
+  type: string;
+  data?: any;
+}

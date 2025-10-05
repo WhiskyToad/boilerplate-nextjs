@@ -1,0 +1,378 @@
+// Capture Handler
+// Handles element capture, event listeners, and step sending
+
+import { ElementData, ContentStepData } from './types';
+
+// Sanitization for element data
+function sanitizeElementData(data: any): any {
+  const sanitizeString = (str: string): string => {
+    return String(str || '').substring(0, 500);
+  };
+
+  return {
+    ...data,
+    textContent: sanitizeString(data.textContent),
+    value: sanitizeString(data.value),
+    placeholder: sanitizeString(data.placeholder),
+    alt: sanitizeString(data.alt),
+    title: sanitizeString(data.title),
+    href: sanitizeString(data.href),
+    url: sanitizeString(data.url),
+  };
+}
+
+export class CaptureHandler {
+  private logger: any;
+  private overlayUI: any;
+  private isCapturing: boolean = false;
+  private stepCount: number = 0;
+
+  constructor(logger: any, overlayUI: any) {
+    this.logger = logger;
+    this.overlayUI = overlayUI;
+  }
+
+  setupEventListeners(): void {
+    // Capture user interactions
+    document.addEventListener('click', this.handleClick.bind(this), true);
+    document.addEventListener('input', this.handleInput.bind(this), true);
+    document.addEventListener('change', this.handleChange.bind(this), true);
+    document.addEventListener('submit', this.handleSubmit.bind(this), true);
+    document.addEventListener('keydown', this.handleKeydown.bind(this), true);
+
+    // Capture hover for better UX (throttled)
+    document.addEventListener('mouseover', this.throttle(this.handleMouseover.bind(this), 100), true);
+  }
+
+  startCapture(): void {
+    this.isCapturing = true;
+    this.stepCount = 0;
+    this.captureInitialState();
+  }
+
+  stopCapture(): void {
+    this.isCapturing = false;
+  }
+
+  getStepCount(): number {
+    return this.stepCount;
+  }
+
+  private async handleClick(event: MouseEvent): Promise<void> {
+    if (!this.isCapturing) {
+      return;
+    }
+
+    const element = event.target as Element;
+
+    // Don't capture clicks on our overlay
+    if (element.closest('.demoflow-overlay')) {
+      return;
+    }
+
+    const elementData = this.captureElement(element);
+
+    const stepData: ContentStepData = {
+      type: 'click',
+      element: {
+        ...elementData,
+        clickPosition: {
+          x: event.clientX,
+          y: event.clientY,
+          pageX: event.pageX,
+          pageY: event.pageY
+        }
+      },
+      interactions: {
+        type: 'click',
+        button: event.button,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey
+      }
+    };
+
+    await this.sendStep(stepData);
+    this.overlayUI.highlightElement(element);
+  }
+
+  private async handleInput(event: Event): Promise<void> {
+    if (!this.isCapturing) return;
+
+    const element = event.target as HTMLInputElement;
+    const elementData = this.captureElement(element);
+
+    const stepData: ContentStepData = {
+      type: 'input',
+      element: elementData,
+      interactions: {
+        type: 'input',
+        value: element.value,
+        inputType: element.type
+      }
+    };
+
+    await this.sendStep(stepData);
+  }
+
+  private async handleChange(event: Event): Promise<void> {
+    if (!this.isCapturing) return;
+
+    const element = event.target as HTMLInputElement;
+    const elementData = this.captureElement(element);
+
+    const stepData: ContentStepData = {
+      type: 'change',
+      element: elementData,
+      interactions: {
+        type: 'change',
+        value: element.value,
+        checked: element.checked,
+        selected: (element as any).selected
+      }
+    };
+
+    await this.sendStep(stepData);
+  }
+
+  private async handleSubmit(event: Event): Promise<void> {
+    if (!this.isCapturing) return;
+
+    const form = event.target as HTMLFormElement;
+    const elementData = this.captureElement(form);
+
+    const stepData: ContentStepData = {
+      type: 'submit',
+      element: elementData,
+      interactions: {
+        type: 'submit',
+        action: form.action,
+        method: form.method
+      }
+    };
+
+    await this.sendStep(stepData);
+  }
+
+  private async handleKeydown(event: KeyboardEvent): Promise<void> {
+    if (!this.isCapturing) return;
+
+    // Capture important keyboard shortcuts
+    if (event.key === 'Enter' || event.key === 'Tab' || event.key === 'Escape') {
+      const element = event.target as Element;
+      const elementData = this.captureElement(element);
+
+      const stepData: ContentStepData = {
+        type: 'keydown',
+        element: elementData,
+        interactions: {
+          type: 'keydown',
+          key: event.key,
+          code: event.code,
+          ctrlKey: event.ctrlKey,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey
+        }
+      };
+
+      await this.sendStep(stepData);
+    }
+  }
+
+  private handleMouseover(event: MouseEvent): void {
+    if (!this.isCapturing) return;
+
+    const element = event.target as Element;
+
+    // Don't highlight our overlay elements
+    if (element.closest('.demoflow-overlay')) return;
+
+    // Only highlight interactive elements
+    if (this.isInteractiveElement(element)) {
+      this.overlayUI.previewElement(element);
+    }
+  }
+
+  private captureElement(element: Element): ElementData {
+    const rect = element.getBoundingClientRect();
+    const computedStyle = window.getComputedStyle(element);
+    const htmlElement = element as HTMLElement;
+
+    const rawData = {
+      // Element identification
+      tagName: element.tagName.toLowerCase(),
+      id: htmlElement.id,
+      className: htmlElement.className,
+      name: (element as HTMLInputElement).name || '',
+      type: (element as HTMLInputElement).type || '',
+
+      // Element content
+      textContent: element.textContent?.substring(0, 100) || '',
+      value: (element as HTMLInputElement).value || '',
+      placeholder: (element as HTMLInputElement).placeholder || '',
+      alt: (element as HTMLImageElement).alt || '',
+      title: htmlElement.title || '',
+      href: (element as HTMLAnchorElement).href || '',
+
+      // Element position and size
+      boundingRect: rect,
+
+      // Element styles (for recreation)
+      styles: {
+        backgroundColor: computedStyle.backgroundColor,
+        color: computedStyle.color,
+        fontSize: computedStyle.fontSize,
+        fontFamily: computedStyle.fontFamily,
+        border: computedStyle.border,
+        borderRadius: computedStyle.borderRadius,
+        padding: computedStyle.padding,
+        margin: computedStyle.margin
+      },
+
+      // DOM path for element recreation
+      selector: this.generateSelector(element),
+      xpath: this.generateXPath(element),
+
+      // Context
+      url: window.location.href,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY
+      }
+    };
+
+    // Sanitize before returning
+    return sanitizeElementData(rawData) as ElementData;
+  }
+
+  private generateSelector(element: Element): string {
+    // Generate a unique CSS selector for the element
+    if ((element as HTMLElement).id) {
+      return `#${(element as HTMLElement).id}`;
+    }
+
+    let selector = element.tagName.toLowerCase();
+
+    if ((element as HTMLElement).className) {
+      const classes = (element as HTMLElement).className.split(' ').filter(c => c && !c.startsWith('demoflow-'));
+      if (classes.length > 0) {
+        selector += '.' + classes.join('.');
+      }
+    }
+
+    // Add nth-child if needed for uniqueness
+    const parent = element.parentElement;
+    if (parent) {
+      const siblings = Array.from(parent.children).filter(child =>
+        child.tagName === element.tagName &&
+        (child as HTMLElement).className === (element as HTMLElement).className
+      );
+
+      if (siblings.length > 1) {
+        const index = siblings.indexOf(element) + 1;
+        selector += `:nth-child(${index})`;
+      }
+    }
+
+    return selector;
+  }
+
+  private generateXPath(element: Element): string {
+    // Generate XPath for robust element finding
+    const parts: string[] = [];
+    let current: Element | null = element;
+
+    while (current && current.nodeType === Node.ELEMENT_NODE) {
+      let part = current.tagName.toLowerCase();
+
+      if ((current as HTMLElement).id) {
+        parts.unshift(`//${part}[@id="${(current as HTMLElement).id}"]`);
+        break;
+      }
+
+      const siblings = Array.from(current.parentNode?.children || [])
+        .filter(child => child.tagName === current!.tagName);
+
+      if (siblings.length > 1) {
+        const index = siblings.indexOf(current) + 1;
+        part += `[${index}]`;
+      }
+
+      parts.unshift(part);
+      current = current.parentElement;
+    }
+
+    return '/' + parts.join('/');
+  }
+
+  private isInteractiveElement(element: Element): boolean {
+    const interactiveTags = ['button', 'a', 'input', 'select', 'textarea'];
+    const interactiveRoles = ['button', 'link', 'tab', 'menuitem'];
+
+    return interactiveTags.includes(element.tagName.toLowerCase()) ||
+           interactiveRoles.includes(element.getAttribute('role') || '') ||
+           (element as any).onclick !== null ||
+           (element as HTMLElement).style.cursor === 'pointer';
+  }
+
+  private async sendStep(stepData: ContentStepData): Promise<void> {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'ADD_STEP',
+        data: stepData
+      });
+
+      this.stepCount++;
+      this.overlayUI.updateStepCount(this.stepCount);
+    } catch (error) {
+      this.logger.error('Failed to send step data:', error);
+    }
+  }
+
+  private captureInitialState(): void {
+    // Capture the initial page state
+    const stepData: ContentStepData = {
+      type: 'navigation',
+      element: {
+        type: 'page',
+        url: window.location.href,
+        title: document.title,
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+      }
+    };
+
+    this.sendStep(stepData);
+  }
+
+  // Utility function to throttle frequent events
+  private throttle<T extends (...args: any[]) => any>(func: T, delay: number): T {
+    let timeoutId: number | null = null;
+    let lastExecTime = 0;
+    return ((...args: any[]) => {
+      const currentTime = Date.now();
+
+      if (currentTime - lastExecTime > delay) {
+        func(...args);
+        lastExecTime = currentTime;
+      } else {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => {
+          func(...args);
+          lastExecTime = Date.now();
+        }, delay - (currentTime - lastExecTime));
+      }
+    }) as T;
+  }
+}
+
+// Export to globalThis
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).CaptureHandler = CaptureHandler;
+}
