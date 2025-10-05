@@ -20,8 +20,15 @@
   "background": {
     "service_worker": "background/background.js"
   },
-  
-  
+
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*", "https://*.vercel.app/*"],
+      "js": ["content/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "DemoFlow Recorder",

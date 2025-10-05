@@ -26,7 +26,7 @@ interface ElementData {
   };
 }
 
-interface StepData {
+interface ContentStepData {
   type: string;
   element: ElementData | any;
   interactions?: any;
@@ -75,11 +75,11 @@ class DemoFlowCapture {
       return;
     }
 
-    console.log('DemoFlow content script: Setting up auth bridge for', window.location.href);
+    console.log('🔌 [CONTENT SCRIPT] Setting up auth bridge for', window.location.href);
 
     // Listen for window messages from the web page
     window.addEventListener('message', (event) => {
-      console.log('Content script received window message:', event.data);
+      console.log('📨 [CONTENT SCRIPT] Received window message:', event.data.type);
       
       if (event.origin !== 'http://localhost:3000') {
         console.log('Ignoring message from unknown origin:', event.origin);
@@ -87,16 +87,24 @@ class DemoFlowCapture {
       }
       
       if (event.data.type === 'DEMOFLOW_AUTH_SUCCESS') {
-        console.log('Auth success detected, forwarding to background script');
-        
+        console.log('✅ [CONTENT SCRIPT] Auth success detected! Forwarding to background...');
+
         // Forward to background script
         chrome.runtime.sendMessage({
           type: 'AUTH_SUCCESS_FROM_WEB',
           data: event.data.data
         }).then(response => {
-          console.log('Background script response:', response);
+          console.log('✅ [CONTENT SCRIPT] Background script acknowledged:', response);
+
+          // Signal to the web page that extension received the data
+          try {
+            sessionStorage.setItem('demoflow_extension_ack', 'received');
+            console.log('✅ [CONTENT SCRIPT] Acknowledged to web page');
+          } catch (error) {
+            console.error('❌ [CONTENT SCRIPT] Failed to acknowledge:', error);
+          }
         }).catch(error => {
-          console.error('Failed to send message to background script:', error);
+          console.error('❌ [CONTENT SCRIPT] Failed to send to background:', error);
         });
       }
     });
@@ -136,7 +144,7 @@ class DemoFlowCapture {
     }
   }
 
-  private startCapture(data: { demoId: string }): void {
+  private startCapture(_data: { demoId: string }): void {
     this.isCapturing = true;
     this.stepCount = 0;
     this.showOverlay();
@@ -169,7 +177,7 @@ class DemoFlowCapture {
       return;
     }
 
-    const stepData: StepData = {
+    const stepData: ContentStepData = {
       type: 'click',
       element: {
         ...elementData,
@@ -199,7 +207,7 @@ class DemoFlowCapture {
     const element = event.target as HTMLInputElement;
     const elementData = this.captureElement(element);
 
-    const stepData: StepData = {
+    const stepData: ContentStepData = {
       type: 'input',
       element: elementData,
       interactions: {
@@ -218,7 +226,7 @@ class DemoFlowCapture {
     const element = event.target as HTMLInputElement;
     const elementData = this.captureElement(element);
 
-    const stepData: StepData = {
+    const stepData: ContentStepData = {
       type: 'change',
       element: elementData,
       interactions: {
@@ -238,7 +246,7 @@ class DemoFlowCapture {
     const form = event.target as HTMLFormElement;
     const elementData = this.captureElement(form);
 
-    const stepData: StepData = {
+    const stepData: ContentStepData = {
       type: 'submit',
       element: elementData,
       interactions: {
@@ -259,7 +267,7 @@ class DemoFlowCapture {
       const element = event.target as Element;
       const elementData = this.captureElement(element);
 
-      const stepData: StepData = {
+      const stepData: ContentStepData = {
         type: 'keydown',
         element: elementData,
         interactions: {
@@ -411,7 +419,7 @@ class DemoFlowCapture {
            (element as HTMLElement).style.cursor === 'pointer';
   }
 
-  private async sendStep(stepData: StepData): Promise<void> {
+  private async sendStep(stepData: ContentStepData): Promise<void> {
     try {
       await chrome.runtime.sendMessage({
         type: 'ADD_STEP',
@@ -427,7 +435,7 @@ class DemoFlowCapture {
 
   private captureInitialState(): void {
     // Capture the initial page state
-    const stepData: StepData = {
+    const stepData: ContentStepData = {
       type: 'navigation',
       element: {
         type: 'page',

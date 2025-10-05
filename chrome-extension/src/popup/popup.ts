@@ -1,7 +1,5 @@
-// DemoFlow Popup Script
+// DemoFlow Popup Script - No Module Imports
 // Handles the extension popup UI and user interactions
-
-import { AuthManager, AuthState } from '../utils/auth-manager.js';
 
 interface PopupRecordingState {
   isRecording: boolean;
@@ -16,14 +14,13 @@ interface MessageData {
 }
 
 class DemoFlowPopup {
-  private authManager: AuthManager;
-  private authState: AuthState | null = null;
+  private api: any; // Will be globalThis.DemoFlowAPI
+  private authState: any = null;
   private recordingState: PopupRecordingState | null = null;
   private timer: number | null = null;
   private startTime: number | null = null;
-  
+
   constructor() {
-    this.authManager = AuthManager.getInstance();
     this.setupEventListeners();
     this.loadState();
   }
@@ -34,24 +31,24 @@ class DemoFlowPopup {
     document.getElementById('recordBtn')?.addEventListener('click', this.handleRecord.bind(this));
     document.getElementById('pauseBtn')?.addEventListener('click', this.handlePause.bind(this));
     document.getElementById('stopBtn')?.addEventListener('click', this.handleStop.bind(this));
-    
+
     // Quick actions
     document.getElementById('addAnnotationBtn')?.addEventListener('click', this.handleAddAnnotation.bind(this));
     document.getElementById('addPauseBtn')?.addEventListener('click', this.handleAddPause.bind(this));
-    
+
     // Footer actions
     document.getElementById('openDashboard')?.addEventListener('click', this.handleOpenDashboard.bind(this));
     document.getElementById('settingsBtn')?.addEventListener('click', this.handleOpenSettings.bind(this));
-    
+
     // Settings modal
     document.getElementById('closeSettings')?.addEventListener('click', this.handleCloseSettings.bind(this));
     document.getElementById('saveSettings')?.addEventListener('click', this.handleSaveSettings.bind(this));
     document.getElementById('resetSettings')?.addEventListener('click', this.handleResetSettings.bind(this));
-    
+
     // Listen for background script messages
     chrome.runtime.onMessage.addListener((message: MessageData, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) => {
       this.handleMessage(message, sender, sendResponse);
-      
+
       // Handle auth completion from background script
       if (message.type === 'AUTH_COMPLETED') {
         console.log('Auth completed message received in popup');
@@ -62,29 +59,49 @@ class DemoFlowPopup {
 
   private async loadState(): Promise<void> {
     try {
-      // Initialize auth manager and get auth state
-      await this.authManager.initialize();
-      this.authState = this.authManager.getAuthState();
-      
+      // Wait for API to be available
+      const checkAPI = () => {
+        if ((globalThis as any).DemoFlowAPI) {
+          this.api = (globalThis as any).DemoFlowAPI;
+          this.initializeWithAPI();
+        } else {
+          setTimeout(checkAPI, 100);
+        }
+      };
+      checkAPI();
+    } catch (error) {
+      console.error('Failed to load popup state:', error);
+      this.updateUI();
+    }
+  }
+
+  private async initializeWithAPI(): Promise<void> {
+    try {
+      await this.api.initialize();
+
+      this.authState = this.api.getAuthState();
+
       // Set up auth state listener
-      this.authManager.addListener((newState: AuthState) => {
+      this.api.addListener((newState: any) => {
         this.authState = newState;
         this.updateUI();
       });
-      
+
       // Get current recording state
       const response = await chrome.runtime.sendMessage({ type: 'GET_RECORDING_STATE' });
       if (response.success) {
         this.recordingState = response.data;
       }
-      
-      // Load recent demos
-      await this.loadRecentDemos();
-      
+
+      // Load recent demos if authenticated
+      if (this.authState?.isAuthenticated) {
+        await this.loadRecentDemos();
+      }
+
       // Update UI
       this.updateUI();
     } catch (error) {
-      console.error('Failed to load popup state:', error);
+      console.error('Failed to initialize popup with API:', error);
       this.updateUI();
     }
   }
@@ -99,16 +116,44 @@ class DemoFlowPopup {
   }
 
   private async handleConnect(): Promise<void> {
+    const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
+    const originalText = connectBtn?.textContent || 'Sign In';
+
     try {
+      if (!this.api) {
+        this.showError('API not initialized');
+        return;
+      }
+
+      if (connectBtn) {
+        connectBtn.disabled = true;
+        connectBtn.textContent = 'Opening login...';
+      }
+
       console.log('Starting authentication flow');
-      await this.authManager.triggerAuthFlow();
+      await this.api.triggerAuthFlow();
       console.log('Authentication flow completed');
+      this.showSuccess('Successfully connected!');
+
     } catch (error) {
       console.error('Authentication failed:', error);
-      this.showError(`Failed to connect: ${(error as Error).message}`);
+      const errorMsg = (error as Error).message;
+
+      if (errorMsg.includes('cancelled')) {
+        this.showError('Login was cancelled');
+      } else if (errorMsg.includes('timeout')) {
+        this.showError('Login timed out. Please try again.');
+      } else {
+        this.showError(`Failed to connect: ${errorMsg}`);
+      }
+    } finally {
+      if (connectBtn) {
+        connectBtn.disabled = false;
+        connectBtn.textContent = originalText;
+      }
     }
   }
-  
+
 
   private async handleRecord(): Promise<void> {
     if (this.recordingState?.isRecording) {
@@ -124,10 +169,10 @@ class DemoFlowPopup {
     try {
       const titleInput = document.getElementById('demoTitle') as HTMLInputElement;
       const descriptionInput = document.getElementById('demoDescription') as HTMLTextAreaElement;
-      
+
       const title = titleInput?.value.trim() || '';
       const description = descriptionInput?.value.trim() || '';
-      
+
       if (!title) {
         this.showError('Please enter a demo title');
         return;
@@ -270,7 +315,7 @@ class DemoFlowPopup {
     if (apiEndpointInput) apiEndpointInput.value = 'http://localhost:3000';
     if (autoSaveInput) autoSaveInput.checked = true;
     if (showHintsInput) showHintsInput.checked = true;
-    
+
     await this.handleSaveSettings();
   }
 
@@ -279,7 +324,7 @@ class DemoFlowPopup {
     const recordingSection = document.getElementById('recordingSection') as HTMLElement;
     const statusIndicator = document.getElementById('statusIndicator') as HTMLElement;
     const statusText = document.getElementById('statusText') as HTMLElement;
-    
+
     // Update authentication state
     if (this.authState?.isAuthenticated) {
       if (authSection) authSection.style.display = 'none';
@@ -332,7 +377,7 @@ class DemoFlowPopup {
     if (pauseBtn) {
       const pauseText = pauseBtn.querySelector('.btn-text') as HTMLElement;
       const pauseIcon = pauseBtn.querySelector('.btn-icon') as HTMLElement;
-      
+
       if (this.recordingState?.isPaused) {
         if (pauseText) pauseText.textContent = 'Resume';
         if (pauseIcon) pauseIcon.textContent = '▶';
@@ -385,14 +430,14 @@ class DemoFlowPopup {
 
   private startTimer(): void {
     if (this.timer) return;
-    
+
     this.timer = setInterval(() => {
       if (this.startTime) {
         const elapsed = Date.now() - this.startTime;
         const minutes = Math.floor(elapsed / 60000);
         const seconds = Math.floor((elapsed % 60000) / 1000);
         const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+
         const durationEl = document.getElementById('duration') as HTMLElement;
         if (durationEl) {
           durationEl.textContent = timeString;
@@ -411,7 +456,7 @@ class DemoFlowPopup {
   private clearDemoInputs(): void {
     const titleInput = document.getElementById('demoTitle') as HTMLInputElement;
     const descriptionInput = document.getElementById('demoDescription') as HTMLTextAreaElement;
-    
+
     if (titleInput) titleInput.value = '';
     if (descriptionInput) descriptionInput.value = '';
   }

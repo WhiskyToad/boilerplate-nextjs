@@ -53,10 +53,13 @@ This is a feature-driven SaaS boilerplate with separation between:
 The schema follows a multi-tenant SaaS pattern:
 - **profiles** - Extended user information beyond auth.users
 - **teams** - Team/workspace organization with personal teams
-- **team_members** - Team membership with roles (owner, admin, member)  
+- **team_members** - Team membership with roles (owner, admin, member)
 - **user_subscriptions** - Stripe integration and subscription status
 - **user_usage** - Usage tracking and quota enforcement
 - **team_invites** - Team invitation system
+- **demos** - DemoFlow demo recordings and metadata
+- **demo_steps** - Individual steps within demo recordings
+- **demo_assets** - Assets (screenshots, videos) associated with demos
 
 ### Authentication Flow
 - Uses Supabase Auth with email/password and OAuth providers
@@ -100,12 +103,29 @@ The schema follows a multi-tenant SaaS pattern:
 - Security middleware protects admin routes
 - Admin dashboard includes: user management, subscription tracking, security monitoring, quick actions, and activity logs
 
+### DemoFlow System (Chrome Extension + Web App)
+- **Chrome Extension** (`chrome-extension/`) - Records interactive product demos
+  - Background service worker for tab management and recording orchestration
+  - Content scripts for capturing user interactions on web pages
+  - Popup UI for authentication and recording controls
+  - Built with TypeScript, bundled separately from main app
+  - Build with `npm run build` in chrome-extension directory
+- **Demo Components** (`src/components/demos/`) - Web-based demo playback
+  - DemoPlayer: Interactive click-through demo player
+  - ScreenshotDemoPlayer: Screenshot-based demo viewer
+  - VideoExporter: Export demos as video files
+- **Demo Features** (`src/features/demos/`) - Demo management UI
+- **API Routes** (`src/app/api/demos/`) - Demo CRUD operations and asset management
+- **Database Tables**: demos, demo_steps, demo_assets (see migrations/20250920_demoflow_tables.sql)
+
 ## Key Configuration Files
-- `next.config.ts` - Minimal Next.js configuration  
+- `next.config.ts` - Minimal Next.js configuration
 - `tsconfig.json` - TypeScript config with path aliases (`@/*` -> `src/*`)
 - `eslint.config.mjs` - ESLint with Next.js and Storybook rules
 - `supabase/config.toml` - Supabase local development configuration
 - `src/lib/stripe-config.ts` - Stripe products and pricing configuration
+- `chrome-extension/manifest.json` - Chrome extension manifest (v3)
+- `chrome-extension/tsconfig.json` - Separate TypeScript config for extension
 
 ## Environment Variables Required
 - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
@@ -120,6 +140,7 @@ The schema follows a multi-tenant SaaS pattern:
 3. New UI components should include Storybook stories
 4. All API routes include proper error handling and validation
 5. Features should be organized by business domain, not technical layer
+6. Chrome extension development is separate - build and test in `chrome-extension/` directory
 
 ## Security Considerations
 - Row Level Security (RLS) policies enforce data access

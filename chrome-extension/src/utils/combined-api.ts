@@ -23,13 +23,13 @@ interface APIResponse<T = any> {
   error?: string;
 }
 
-interface DemoData {
+interface APIDemoData {
   title: string;
   description?: string;
   settings?: any;
 }
 
-interface StepData {
+interface APIStepData {
   sequence_order: number;
   step_type: string;
   element_data: any;
@@ -100,10 +100,39 @@ class DemoFlowCombinedAPI {
     this.notifyListeners();
   }
 
+  // Decode JWT token to get expiration
+  private decodeJWT(token: string): any {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Failed to decode JWT:', error);
+      return null;
+    }
+  }
+
   public async setAuthData(authData: AuthData): Promise<void> {
     try {
-      const expiresAt = authData.expiresAt || (Date.now() + 60 * 60 * 1000);
-      
+      // Decode JWT to get real expiration
+      let expiresAt = authData.expiresAt || 0;
+
+      if (!expiresAt && authData.token) {
+        const decoded = this.decodeJWT(authData.token);
+        if (decoded && decoded.exp) {
+          // JWT exp is in seconds, convert to milliseconds
+          expiresAt = decoded.exp * 1000;
+          console.log('Decoded JWT expiration:', new Date(expiresAt).toISOString());
+        } else {
+          // Fallback to 1 hour
+          expiresAt = Date.now() + 60 * 60 * 1000;
+          console.warn('Could not decode JWT, using 1 hour expiration');
+        }
+      }
+
       await chrome.storage.local.set({
         authToken: authData.token,
         user: authData.user,
@@ -206,9 +235,9 @@ class DemoFlowCombinedAPI {
 
   public async triggerAuthFlow(): Promise<void> {
     console.log('Triggering authentication flow');
-    
+
     const authUrl = `${this.baseUrl}/login?extension=true&redirect=${encodeURIComponent('/auth-callback')}`;
-    
+
     return new Promise((resolve, reject) => {
       chrome.tabs.create({ url: authUrl }, (tab) => {
         if (!tab.id) {
@@ -217,29 +246,47 @@ class DemoFlowCombinedAPI {
         }
 
         console.log('Auth tab created:', tab.id);
-        
-        const timeout = setTimeout(() => {
-          cleanup();
-          reject(new Error('Authentication timed out'));
-        }, 120000);
+        const tabId = tab.id;
 
-        const authCompleteListener = (authData: AuthData) => {
-          cleanup();
-          this.setAuthData(authData).then(resolve).catch(reject);
+        // Set a timeout for the auth flow (3 minutes)
+        const timeout = setTimeout(() => {
+          cleanup(true);
+          reject(new Error('Authentication timed out. Please try again.'));
+        }, 180000);
+
+        // Listen for tab closure
+        const tabRemovedListener = (closedTabId: number) => {
+          if (closedTabId === tabId) {
+            cleanup(false);
+            reject(new Error('Authentication cancelled'));
+          }
         };
 
-        const cleanup = () => {
+        // Listen for auth completion
+        const authCompleteListener = (authData: AuthData) => {
+          cleanup(false);
+          this.setAuthData(authData).then(() => {
+            console.log('Authentication flow completed successfully');
+            resolve();
+          }).catch(reject);
+        };
+
+        const cleanup = (closeTab: boolean) => {
           clearTimeout(timeout);
           this.removeAuthListener(authCompleteListener);
-          try {
-            chrome.tabs.remove(tab.id!);
-          } catch (error) {
-            // Tab might already be closed
+          chrome.tabs.onRemoved.removeListener(tabRemovedListener);
+
+          if (closeTab) {
+            try {
+              chrome.tabs.remove(tabId);
+            } catch (error) {
+              // Tab might already be closed
+            }
           }
         };
 
         this.addAuthListener(authCompleteListener);
-        setTimeout(cleanup, 120000);
+        chrome.tabs.onRemoved.addListener(tabRemovedListener);
       });
     });
   }
@@ -310,8 +357,6 @@ class DemoFlowCombinedAPI {
       ...options,
     };
 
-    const token = await this.getValidToken();
-
     try {
       const response = await fetch(url, config);
       
@@ -341,7 +386,7 @@ class DemoFlowCombinedAPI {
   }
 
   // Demo Management APIs
-  public async createDemo(demoData: DemoData): Promise<any> {
+  public async createDemo(demoData: APIDemoData): Promise<any> {
     const response = await this.request('/api/demos', {
       method: 'POST',
       body: JSON.stringify(demoData),
@@ -355,7 +400,7 @@ class DemoFlowCombinedAPI {
     throw new Error('Invalid response format from demo creation API');
   }
 
-  public async saveSteps(demoId: string, steps: StepData | StepData[]): Promise<StepData[]> {
+  public async saveSteps(demoId: string, steps: APIStepData | APIStepData[]): Promise<APIStepData[]> {
     const stepsArray = Array.isArray(steps) ? steps : [steps];
     
     const response = await this.request(`/api/demos/${demoId}/steps`, {

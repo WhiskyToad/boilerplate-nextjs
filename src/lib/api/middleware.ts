@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit } from './rate-limit'
+import { hashApiKey, constantTimeCompare } from './api-keys'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,17 +47,77 @@ export function apiError(
   }, { status })
 }
 
-// Authentication middleware
+// Validate API key authentication
+async function validateApiKey(apiKey: string): Promise<any | null> {
+  try {
+    const keyHash = hashApiKey(apiKey)
+
+    // Look up API key in database
+    const { data: apiKeyRecord, error } = await supabase
+      .from('api_keys')
+      .select('user_id, is_active, expires_at, id')
+      .eq('key_hash', keyHash)
+      .eq('is_active', true)
+      .single()
+
+    if (error || !apiKeyRecord) {
+      return null
+    }
+
+    // Check if expired
+    if (apiKeyRecord.expires_at) {
+      const expiresAt = new Date(apiKeyRecord.expires_at)
+      if (expiresAt < new Date()) {
+        return null
+      }
+    }
+
+    // Update last_used_at (fire and forget)
+    supabase
+      .from('api_keys')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('id', apiKeyRecord.id)
+      .then(() => {})
+      .catch(() => {})
+
+    // Get user details
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(
+      apiKeyRecord.user_id
+    )
+
+    if (userError || !user) {
+      return null
+    }
+
+    return user
+  } catch (error) {
+    console.error('API key validation error:', error)
+    return null
+  }
+}
+
+// Authentication middleware - supports both session tokens and API keys
 export async function requireAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
-  
+
   if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('Missing or invalid authorization header')
   }
 
   const token = authHeader.replace('Bearer ', '')
+
+  // Check if it's an API key (starts with df_)
+  if (token.startsWith('df_')) {
+    const user = await validateApiKey(token)
+    if (!user) {
+      throw new Error('Invalid or expired API key')
+    }
+    return user
+  }
+
+  // Otherwise treat as session token
   const { data: { user }, error } = await supabase.auth.getUser(token)
-  
+
   if (error || !user) {
     throw new Error('Invalid or expired token')
   }
