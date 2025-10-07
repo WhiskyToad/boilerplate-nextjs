@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StepIcon } from "./StepIcon";
 import { ZoomSlider } from "./ZoomSlider";
 import { useZoomEditing } from "../hooks/useZoomEditing";
+import { useBubbleEditing } from "../hooks/useBubbleEditing";
 import {
   generateStepTitle,
   getStepType,
@@ -42,6 +43,20 @@ export function StepsSidebar({
       onZoomChange,
       onZoomConfigSaved,
     });
+
+  // Use custom hook for bubble editing logic
+  const {
+    editingBubble,
+    isSaving: isSavingBubble,
+    modifiedSteps: modifiedBubbleSteps,
+    handleBubbleChange,
+    handleRemoveBubble,
+  } = useBubbleEditing({
+    steps,
+    currentStepIndex,
+    demoId,
+    onBubbleChange: onZoomConfigSaved, // Reuse same callback
+  });
 
   const getStepStatus = (index: number) => {
     if (index === currentStepIndex) return "current";
@@ -294,6 +309,82 @@ export function StepsSidebar({
                         handleZoomChange(index, "focusY", value)
                       }
                     />
+
+                    {/* Bubble Text Section */}
+                    <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          Bubble Text
+                        </label>
+                        {editingBubble[index]?.text && (
+                          <button
+                            onClick={() => handleRemoveBubble(index)}
+                            className="text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                            disabled={isSavingBubble}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <textarea
+                        value={editingBubble[index]?.text || ""}
+                        onChange={(e) =>
+                          handleBubbleChange(index, "text", e.target.value)
+                        }
+                        placeholder="Add annotation text..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows={2}
+                      />
+
+                      {/* Position Selector */}
+                      <div className="mt-3">
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">
+                          Position
+                        </label>
+                        <select
+                          value={editingBubble[index]?.position || "auto"}
+                          onChange={(e) =>
+                            handleBubbleChange(
+                              index,
+                              "position",
+                              e.target.value
+                            )
+                          }
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="auto">Auto</option>
+                          <option value="top">Top</option>
+                          <option value="bottom">Bottom</option>
+                          <option value="left">Left</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+
+                      {/* Style Selector */}
+                      <div className="mt-3">
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">
+                          Style
+                        </label>
+                        <select
+                          value={editingBubble[index]?.style || "callout"}
+                          onChange={(e) =>
+                            handleBubbleChange(index, "style", e.target.value)
+                          }
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="tooltip">Tooltip</option>
+                          <option value="callout">Callout</option>
+                          <option value="speech">Speech Bubble</option>
+                        </select>
+                      </div>
+
+                      {isSavingBubble && modifiedBubbleSteps.has(index) && (
+                        <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                          Saving...
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

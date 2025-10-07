@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { usePlaybackState } from "@/hooks/usePlaybackState";
 import { StepsSidebar } from "./StepsSidebar";
 import { PlaybackTopBar } from "./PlaybackTopBar";
+import { BubbleText } from "./BubbleText";
 import {
   generateActionDescription,
   getElementData,
+  getBubbleConfig,
   type StepData,
 } from "../utils/step-helpers";
 import type { PlaybackConfig } from "../types/playback-config";
@@ -305,6 +307,15 @@ export function DemoPlayer({ steps, demoId, demoTitle }: DemoPlayerProps) {
                         transition: "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
                       }}
                     />
+
+                    {/* Bubble text annotation */}
+                    {getBubbleConfig(currentStep) && (
+                      <BubbleText
+                        config={getBubbleConfig(currentStep)!}
+                        highlightPosition={highlightPosition}
+                        imageScale={imageScale}
+                      />
+                    )}
                   </>
                 )}
               </div>
