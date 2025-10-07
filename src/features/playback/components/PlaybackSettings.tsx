@@ -1,0 +1,319 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import type { PlaybackConfig } from "../types/playback-config";
+
+interface PlaybackSettingsProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentStep: any;
+  demoId: string;
+  imageSize: { width: number; height: number } | null;
+  onZoomChange?: (scale: number, focusX: number, focusY: number) => void;
+}
+
+export function PlaybackSettings({
+  isOpen,
+  onClose,
+  currentStep,
+  demoId,
+  imageSize,
+  onZoomChange,
+}: PlaybackSettingsProps) {
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  const [zoomLevel, setZoomLevel] = useState(1.5);
+  const [focusPoint, setFocusPoint] = useState({ x: 50, y: 50 });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load existing config when step changes
+  useEffect(() => {
+    const config: PlaybackConfig | undefined =
+      currentStep?.annotations?.playback;
+    if (config?.zoom?.enabled) {
+      setMode("manual");
+      setZoomLevel(config.zoom.scale);
+      setFocusPoint({ x: config.zoom.focusX, y: config.zoom.focusY });
+    } else {
+      setMode("auto");
+    }
+  }, [currentStep]);
+
+  const handleZoomPreset = (level: number) => {
+    setZoomLevel(level);
+    setMode("manual");
+    if (onZoomChange) {
+      onZoomChange(level, focusPoint.x, focusPoint.y);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentStep?.id) return;
+
+    setIsSaving(true);
+    try {
+      const playbackConfig: PlaybackConfig = {
+        zoom:
+          mode === "manual"
+            ? {
+                enabled: true,
+                scale: zoomLevel,
+                focusX: focusPoint.x,
+                focusY: focusPoint.y,
+              }
+            : undefined,
+      };
+
+      const response = await fetch(
+        `/api/demos/${demoId}/steps/${currentStep.id}/playback`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(playbackConfig),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to save");
+
+      // Trigger zoom update
+      if (mode === "manual" && onZoomChange) {
+        onZoomChange(zoomLevel, focusPoint.x, focusPoint.y);
+      }
+
+      alert("Zoom settings saved!");
+    } catch (error) {
+      alert("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!currentStep?.id) return;
+
+    setIsSaving(true);
+    try {
+      await fetch(`/api/demos/${demoId}/steps/${currentStep.id}/playback`, {
+        method: "DELETE",
+      });
+
+      setMode("auto");
+      setZoomLevel(1.5);
+      setFocusPoint({ x: 50, y: 50 });
+
+      alert("Reset to auto-zoom");
+    } catch (error) {
+      alert("Failed to reset");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/20 z-[100000] transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Settings Panel */}
+      <div className="fixed top-14 right-0 bottom-0 w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 z-[100001] shadow-2xl overflow-y-auto">
+        <div className="p-4 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Playback Settings
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Step Info */}
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Configuring Step {currentStep?.sequence_order + 1}
+          </div>
+
+          {/* Zoom Mode Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Zoom Mode
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMode("auto")}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  mode === "auto"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                }`}
+              >
+                Auto
+              </button>
+              <button
+                onClick={() => setMode("manual")}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  mode === "manual"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                }`}
+              >
+                Manual
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {mode === "auto"
+                ? "Smart zoom based on element size"
+                : "Custom zoom level and focus"}
+            </p>
+          </div>
+
+          {/* Zoom Level - Only show in manual mode */}
+          {mode === "manual" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Zoom Level: {zoomLevel.toFixed(1)}x
+                </label>
+
+                {/* Preset Buttons */}
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {[1.0, 1.5, 2.0, 2.5, 3.0].map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => handleZoomPreset(level)}
+                      className={`px-2 py-1 rounded text-sm font-medium transition-colors ${
+                        Math.abs(zoomLevel - level) < 0.1
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {level}x
+                    </button>
+                  ))}
+                </div>
+
+                {/* Slider */}
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={zoomLevel}
+                  onChange={(e) => {
+                    const level = parseFloat(e.target.value);
+                    setZoomLevel(level);
+                    if (onZoomChange) {
+                      onZoomChange(level, focusPoint.x, focusPoint.y);
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Focus Point */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Zoom Focus Point
+                </label>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Horizontal:
+                    </span>
+                    <span className="font-mono text-gray-900 dark:text-white">
+                      {focusPoint.x}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={focusPoint.x}
+                    onChange={(e) => {
+                      const x = parseInt(e.target.value);
+                      setFocusPoint((prev) => ({ ...prev, x }));
+                      if (onZoomChange) {
+                        onZoomChange(zoomLevel, x, focusPoint.y);
+                      }
+                    }}
+                    className="w-full"
+                  />
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Vertical:
+                    </span>
+                    <span className="font-mono text-gray-900 dark:text-white">
+                      {focusPoint.y}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={focusPoint.y}
+                    onChange={(e) => {
+                      const y = parseInt(e.target.value);
+                      setFocusPoint((prev) => ({ ...prev, y }));
+                      if (onZoomChange) {
+                        onZoomChange(zoomLevel, focusPoint.x, y);
+                      }
+                    }}
+                    className="w-full"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Click on screenshot to set focus point (coming soon)
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-800">
+            <button
+              onClick={handleReset}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              Reset
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </button>
+          </div>
+
+          {/* Help Text */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              💡 Changes apply to this step only. Use sliders to preview zoom in
+              real-time.
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

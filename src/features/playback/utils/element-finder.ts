@@ -10,22 +10,16 @@ export function findElementFromStep(stepData: any, targetDocument: Document = do
   // Strategy 1: Try ID (most reliable)
   if (elementData.id) {
     const el = targetDocument.getElementById(elementData.id);
-    if (el) {
-      console.log('[Playback] Found element by ID:', elementData.id);
-      return el;
-    }
+    if (el) return el;
   }
 
   // Strategy 2: Try CSS selector
   if (elementData.selector) {
     try {
       const el = targetDocument.querySelector(elementData.selector);
-      if (el) {
-        console.log('[Playback] Found element by selector:', elementData.selector);
-        return el;
-      }
+      if (el) return el;
     } catch (e) {
-      console.warn('[Playback] Invalid selector:', elementData.selector);
+      // Invalid selector, continue to next strategy
     }
   }
 
@@ -40,11 +34,10 @@ export function findElementFromStep(stepData: any, targetDocument: Document = do
         null
       );
       if (result.singleNodeValue) {
-        console.log('[Playback] Found element by XPath:', elementData.xpath);
         return result.singleNodeValue as Element;
       }
     } catch (e) {
-      console.warn('[Playback] Invalid XPath:', elementData.xpath);
+      // Invalid XPath, continue to next strategy
     }
   }
 
@@ -54,21 +47,16 @@ export function findElementFromStep(stepData: any, targetDocument: Document = do
     const interactiveTags = 'button, a, input, select, textarea, [role="button"], [role="link"]';
     const allElements = targetDocument.querySelectorAll(interactiveTags);
 
+    // Exact match
     for (const el of allElements) {
       const elText = el.textContent?.trim() || '';
-      if (elText === targetText) {
-        console.log('[Playback] Found element by text match:', targetText);
-        return el;
-      }
+      if (elText === targetText) return el;
     }
 
-    // Try partial match
+    // Partial match
     for (const el of allElements) {
       const elText = el.textContent?.trim() || '';
-      if (elText.includes(targetText) || targetText.includes(elText)) {
-        console.log('[Playback] Found element by partial text match:', targetText);
-        return el;
-      }
+      if (elText.includes(targetText) || targetText.includes(elText)) return el;
     }
   }
 
@@ -84,13 +72,11 @@ export function findElementFromStep(stepData: any, targetDocument: Document = do
         Math.abs(rect.top - targetRect.top) < 50 &&
         Math.abs(rect.left - targetRect.left) < 50
       ) {
-        console.log('[Playback] Found element by position match:', elementData.tagName);
         return el;
       }
     }
   }
 
-  console.warn('[Playback] Could not find element for step:', stepData);
   return null;
 }
 
