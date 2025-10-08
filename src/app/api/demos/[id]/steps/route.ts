@@ -23,9 +23,13 @@ const bulkStepsSchema = z.object({
   replace_existing: z.boolean().optional().default(false),
 });
 
-export const GET = withAuth(async (request: NextRequest, user: any, context: { params: { id: string } }) => {
+export const GET = withAuth(async (request: NextRequest, user: any, context: { params?: { id?: string } }) => {
   const params = await context.params;
-  const demoId = params.id;
+  const demoId = params?.id;
+
+  if (!demoId) {
+    return apiError('Demo ID is required', 400);
+  }
 
   // Verify demo ownership
   const { data: demo, error: demoError } = await supabase
@@ -53,9 +57,13 @@ export const GET = withAuth(async (request: NextRequest, user: any, context: { p
   return apiResponse({ steps: steps || [] });
 });
 
-export const POST = withAuth(async (request: NextRequest, user: any, context: { params: { id: string } }) => {
+export const POST = withAuth(async (request: NextRequest, user: any, context: { params?: { id?: string } }) => {
   const params = await context.params;
-  const demoId = params.id;
+  const demoId = params?.id;
+
+  if (!demoId) {
+    return apiError('Demo ID is required', 400);
+  }
 
   // Verify demo ownership
   const { data: demo, error: demoError } = await supabase
@@ -70,7 +78,7 @@ export const POST = withAuth(async (request: NextRequest, user: any, context: { 
   }
 
   // Parse request body
-  const body = await parseRequestBody(request);
+  const body = await parseRequestBody(request) as any;
   
   if (!body.steps || !Array.isArray(body.steps)) {
     return apiError('Steps array is required', 400);
@@ -121,6 +129,7 @@ export const POST = withAuth(async (request: NextRequest, user: any, context: { 
 
   } catch (error) {
     console.error('Error saving demo steps:', error);
-    return apiError('Failed to save demo steps', 500);
+    const message = error instanceof Error ? error.message : 'Failed to save demo steps';
+    return apiError(`Failed to save demo steps: ${message}`, 500);
   }
 });

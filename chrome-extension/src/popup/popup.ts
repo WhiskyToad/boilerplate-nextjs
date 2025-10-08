@@ -1,14 +1,13 @@
 // DemoFlow Popup - Modular Version
 // Main entry point that orchestrates all popup modules
 
-// Load utility modules first (from combined-api.js loaded in HTML)
-const popupGlobal = globalThis as any;
-const POPUP_CONFIG = popupGlobal.CONFIG;
-const POPUP_ERROR_MESSAGES = popupGlobal.ERROR_MESSAGES;
-const POPUP_Logger = popupGlobal.PopupLogger;
-
-// Import popup modules (compiled to JS, loaded via script tags)
-// types.js, ui-controller.js, recording-controls.js should be loaded in HTML
+// Import utility modules
+import { CONFIG } from '../utils/config.js';
+import { ERROR_MESSAGES } from '../utils/errors.js';
+import { PopupLogger } from '../utils/logger.js';
+import { UIController } from './ui-controller.js';
+import { RecordingControls } from './recording-controls.js';
+import { PopupAPI } from './popup-api.js';
 
 // Sanitization functions (inline for now since they're small)
 function sanitizeText(text: string, maxLength: number = 1000): string {
@@ -51,16 +50,12 @@ class DemoFlowPopup {
   }
 
   private setupModules(): void {
-    // Get module classes from globalThis
-    const UIController = popupGlobal.UIController;
-    const RecordingControls = popupGlobal.RecordingControls;
-
-    // Initialize modules
-    this.uiController = new UIController(POPUP_Logger);
+    // Initialize modules with imported classes
+    this.uiController = new UIController(PopupLogger);
     this.recordingControls = new RecordingControls(
       null, // API will be set after it loads
-      POPUP_Logger,
-      POPUP_ERROR_MESSAGES,
+      PopupLogger,
+      ERROR_MESSAGES,
       this.uiController
     );
   }
@@ -114,19 +109,12 @@ class DemoFlowPopup {
 
   private async loadState(): Promise<void> {
     try {
-      // Wait for API to be available
-      const checkAPI = () => {
-        if (popupGlobal.DemoFlowAPI) {
-          this.api = popupGlobal.DemoFlowAPI;
-          this.recordingControls.api = this.api;
-          this.initializeWithAPI();
-        } else {
-          setTimeout(checkAPI, 100);
-        }
-      };
-      checkAPI();
+      // Initialize API directly
+      this.api = new PopupAPI();
+      this.recordingControls.api = this.api;
+      await this.initializeWithAPI();
     } catch (error) {
-      POPUP_Logger.error('Failed to load popup state', error as Error);
+      PopupLogger.error('Failed to load popup state', error as Error);
       this.updateUI();
     }
   }
@@ -154,7 +142,7 @@ class DemoFlowPopup {
       // Update UI
       this.updateUI();
     } catch (error) {
-      POPUP_Logger.error('Failed to initialize popup with API', error as Error);
+      PopupLogger.error('Failed to initialize popup with API', error as Error);
       this.updateUI();
     }
   }
@@ -166,13 +154,13 @@ class DemoFlowPopup {
         this.updateUI();
         break;
       case 'AUTH_COMPLETED':
-        POPUP_Logger.debug('Auth completed message received in popup');
+        PopupLogger.debug('Auth completed message received in popup');
         break;
     }
   }
 
   private handleOpenDashboard(): void {
-    chrome.tabs.create({ url: POPUP_CONFIG.DASHBOARD_URL });
+    chrome.tabs.create({ url: CONFIG.DASHBOARD_URL });
   }
 
   private handleOpenSettings(): void {
@@ -195,7 +183,7 @@ class DemoFlowPopup {
 
   private cleanup(): void {
     this.recordingControls.cleanup();
-    POPUP_Logger.debug('Popup cleaned up');
+    PopupLogger.debug('Popup cleaned up');
   }
 }
 

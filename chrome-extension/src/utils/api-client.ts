@@ -160,6 +160,65 @@ export class APIClient {
 
     throw new Error('Invalid response format from update demo API');
   }
+
+  async getDemo(demoId: string): Promise<any> {
+    const response = await this.request(`/api/demos/${demoId}`);
+
+    if (response.success) {
+      return response.data?.demo ?? response.data;
+    }
+
+    throw new Error(response.error || this.errorMessages.SERVER_ERROR);
+  }
+
+  async listDemos(params: Record<string, string> = {}): Promise<any> {
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    const endpoint = queryString ? `/api/demos?${queryString}` : '/api/demos';
+
+    const response = await this.request(endpoint);
+
+    if (response.success) {
+      return response.data?.demos ?? response.data;
+    }
+
+    throw new Error(response.error || this.errorMessages.SERVER_ERROR);
+  }
+
+  async uploadScreenshot(base64Data: string): Promise<any> {
+    try {
+      const response = await fetch(base64Data);
+      const blob = await response.blob();
+
+      const formData = new FormData();
+      formData.append('file', blob, `screenshot-${Date.now()}.png`);
+
+      const token = await this.authManager.getValidToken();
+      const headers: Record<string, string> = {};
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const uploadResponse = await fetch(`${this.baseUrl}/api/upload/image`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const result = await uploadResponse.json().catch(() => ({}));
+
+      if (!uploadResponse.ok) {
+        this.logger.error('Screenshot upload failed', result);
+        throw new Error(result.error || this.errorMessages.SCREENSHOT_UPLOAD_FAILED);
+      }
+
+      return result.data ?? result;
+    } catch (error) {
+      this.logger.error('Screenshot upload error', error as Error);
+      throw error instanceof Error ? error : new Error(this.errorMessages.SCREENSHOT_UPLOAD_FAILED);
+    }
+  }
 }
 
 // Export to globalThis for service worker compatibility

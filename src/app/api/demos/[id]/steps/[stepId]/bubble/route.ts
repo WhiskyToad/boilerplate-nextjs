@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { demoId: string; stepId: string } }
+  { params }: { params: { id: string; stepId: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -49,7 +49,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { demoId: string; stepId: string } }
+  { params }: { params: { id: string; stepId: string } }
 ) {
   try {
     const supabase = await createClient();

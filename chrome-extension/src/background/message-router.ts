@@ -1,8 +1,8 @@
 // Message Router
 // Routes messages to appropriate handlers
 
-import { RecordingManager } from './recording-manager';
-import { MessageData, DemoData, BackgroundStepData } from './types';
+import { RecordingManager } from './recording-manager.js';
+import { MessageData, DemoData, BackgroundStepData } from './types.js';
 
 export class MessageRouter {
   private recordingManager: RecordingManager;
@@ -42,19 +42,23 @@ export class MessageRouter {
           break;
 
         case 'PAUSE_RECORDING':
-          this.handlePauseRecording(sendResponse);
+          await this.handlePauseRecording(sendResponse);
           break;
 
         case 'RESUME_RECORDING':
-          this.handleResumeRecording(sendResponse);
+          await this.handleResumeRecording(sendResponse);
           break;
 
         case 'ADD_STEP':
-          await this.handleAddStep(message.data, sender.tab!, sendResponse);
+          if (sender.tab) {
+            await this.handleAddStep(message.data, sender.tab, sendResponse);
+          } else {
+            sendResponse({ success: false, error: 'No tab context provided for ADD_STEP' });
+          }
           break;
 
         case 'GET_RECORDING_STATE':
-          this.handleGetRecordingState(sendResponse);
+          await this.handleGetRecordingState(sendResponse);
           break;
 
         case 'AUTH_SUCCESS_FROM_WEB':
@@ -81,8 +85,17 @@ export class MessageRouter {
       sendResponse({ success: false, error: 'No active tab found' });
       return;
     }
+
     await this.recordingManager.startRecording(data, activeTab);
-    sendResponse({ success: true });
+    const state = await this.recordingManager.getState();
+    sendResponse({
+      success: true,
+      data: {
+        demoId: state.demoId,
+        startUrl: state.startUrl,
+        startTabId: state.startTabId
+      }
+    });
   }
 
   private async handleStopRecording(sendResponse: (response: any) => void): Promise<void> {
@@ -90,13 +103,13 @@ export class MessageRouter {
     sendResponse({ success: true });
   }
 
-  private handlePauseRecording(sendResponse: (response: any) => void): void {
-    this.recordingManager.pauseRecording();
+  private async handlePauseRecording(sendResponse: (response: any) => void): Promise<void> {
+    await this.recordingManager.pauseRecording();
     sendResponse({ success: true });
   }
 
-  private handleResumeRecording(sendResponse: (response: any) => void): void {
-    this.recordingManager.resumeRecording();
+  private async handleResumeRecording(sendResponse: (response: any) => void): Promise<void> {
+    await this.recordingManager.resumeRecording();
     sendResponse({ success: true });
   }
 
@@ -109,11 +122,9 @@ export class MessageRouter {
     sendResponse({ success: true });
   }
 
-  private handleGetRecordingState(sendResponse: (response: any) => void): void {
-    sendResponse({
-      success: true,
-      data: this.recordingManager.getState()
-    });
+  private async handleGetRecordingState(sendResponse: (response: any) => void): Promise<void> {
+    const state = await this.recordingManager.getState();
+    sendResponse({ success: true, data: state });
   }
 
   private async handleAuthSuccess(data: any, sendResponse: (response: any) => void): Promise<void> {
@@ -127,7 +138,6 @@ export class MessageRouter {
         this.api.notifyAuthCompletion(data);
         this.logger.info('✅ Authentication stored successfully!');
 
-        // Verify it was stored
         const stored = this.api.getAuthState();
         this.logger.debug('Verified stored auth state:', stored.isAuthenticated ? 'AUTHENTICATED' : 'NOT AUTHENTICATED');
       } else {
@@ -138,11 +148,10 @@ export class MessageRouter {
       throw error;
     }
 
-    // Notify popup
     try {
       chrome.runtime.sendMessage({
         type: 'AUTH_COMPLETED',
-        data: data
+        data
       });
       this.logger.debug('Notified popup of auth completion');
     } catch (error) {

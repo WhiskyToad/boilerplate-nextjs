@@ -1,10 +1,10 @@
 // Recording Manager
 // Orchestrates demo recording lifecycle
 
-import { RecordingStateManager } from './recording-state';
-import { ScreenshotManager } from './screenshot-manager';
-import { TabManager } from './tab-manager';
-import { DemoData, BackgroundStepData } from './types';
+import { RecordingStateManager } from './recording-state.js';
+import { ScreenshotManager } from './screenshot-manager.js';
+import { TabManager } from './tab-manager.js';
+import { DemoData, BackgroundStepData } from './types.js';
 
 export class RecordingManager {
   private stateManager: RecordingStateManager;
@@ -12,6 +12,7 @@ export class RecordingManager {
   private tabManager: TabManager;
   private api: any;
   private logger: any;
+  private broadcastDebounce?: number;
 
   constructor(
     api: any,
@@ -25,7 +26,7 @@ export class RecordingManager {
     this.tabManager = new TabManager(logger);
   }
 
-  getState() {
+  async getState() {
     return this.stateManager.getState();
   }
 
@@ -50,16 +51,18 @@ export class RecordingManager {
         }
       });
 
-      this.stateManager.startRecording({
+      await this.stateManager.startRecording({
         demoId: demo.id,
         startTabId: tab.id!,
         startUrl: tab.url!,
         steps: []
       });
 
+      await this.broadcastState();
+
       // Capture initial screenshot
-      setTimeout(async () => {
-        await this.addStep({
+      setTimeout(() => {
+        void this.addStep({
           type: 'initial',
           element: {
             type: 'page',
@@ -94,7 +97,7 @@ export class RecordingManager {
   }
 
   async stopRecording(): Promise<void> {
-    const state = this.stateManager.getState();
+    const state = await this.stateManager.getState();
     if (!state.isRecording) return;
 
     this.logger.info(`🛑 Stopping recording... (${state.steps.length} steps to save)`);
@@ -125,7 +128,8 @@ export class RecordingManager {
         }
       }
 
-      this.stateManager.stopRecording();
+      await this.stateManager.stopRecording();
+      await this.broadcastState();
 
     } catch (error) {
       this.logger.error('Error stopping recording', error as Error);
@@ -133,16 +137,18 @@ export class RecordingManager {
     }
   }
 
-  pauseRecording(): void {
-    this.stateManager.pauseRecording();
+  async pauseRecording(): Promise<void> {
+    await this.stateManager.pauseRecording();
+    await this.broadcastState();
   }
 
-  resumeRecording(): void {
-    this.stateManager.resumeRecording();
+  async resumeRecording(): Promise<void> {
+    await this.stateManager.resumeRecording();
+    await this.broadcastState();
   }
 
   async addStep(stepData: BackgroundStepData, tab: chrome.tabs.Tab): Promise<void> {
-    const state = this.stateManager.getState();
+    const state = await this.stateManager.getState();
     if (!state.isRecording || state.isPaused) return;
 
     // Capture screenshot for this step
@@ -162,13 +168,15 @@ export class RecordingManager {
       screenshot_url: screenshot
     };
 
-    this.stateManager.addStep(step);
+    await this.stateManager.addStep(step);
 
-    this.logger.debug(`📝 Step ${state.steps.length + 1} captured (not saved yet)`);
+    const updatedState = await this.stateManager.getState();
+    this.logger.debug(`📝 Step ${updatedState.steps.length} captured (not saved yet)`);
+    await this.broadcastState();
   }
 
   async handleTabUpdate(_tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab): Promise<void> {
-    const state = this.stateManager.getState();
+    const state = await this.stateManager.getState();
     if (!state.isRecording || state.isPaused) return;
 
     if (changeInfo.status === 'complete' && changeInfo.url) {
@@ -184,7 +192,7 @@ export class RecordingManager {
   }
 
   async handleTabRemoved(tabId: number): Promise<void> {
-    const state = this.stateManager.getState();
+    const state = await this.stateManager.getState();
 
     if (state.isRecording && state.startTabId === tabId) {
       this.logger.warn('Recording tab closed, forcing stop');
@@ -194,7 +202,8 @@ export class RecordingManager {
       } catch (error) {
         // Force state reset even if save fails
         this.logger.error('Failed to stop recording gracefully, forcing reset', error as Error);
-        this.stateManager.stopRecording();
+        await this.stateManager.stopRecording();
+        await this.broadcastState();
       }
     }
   }
@@ -204,6 +213,40 @@ export class RecordingManager {
     const first = steps[0].timing_data?.timestamp || 0;
     const last = steps[steps.length - 1].timing_data?.timestamp || 0;
     return Math.round((last - first) / 1000);
+  }
+
+  private async broadcastState(): Promise<void> {
+    // Debounce rapid updates (e.g., typing) to avoid spamming listeners
+    if (this.broadcastDebounce) {
+      clearTimeout(this.broadcastDebounce);
+    }
+
+    await new Promise<void>((resolve) => {
+      this.broadcastDebounce = setTimeout(async () => {
+        try {
+          const state = await this.stateManager.getState();
+
+          try {
+            await chrome.runtime.sendMessage({
+              type: 'STATE_UPDATE',
+              data: state
+            });
+          } catch (error) {
+            // Likely no popup open; log at debug level only
+            this.logger.debug('Popup not available for state update', error as Error);
+          }
+
+          await this.tabManager.broadcastToAllTabs({
+            type: 'STATE_UPDATE',
+            data: state
+          });
+        } catch (error) {
+          this.logger.error('Failed to broadcast recording state', error as Error);
+        } finally {
+          resolve();
+        }
+      }, 100);
+    });
   }
 }
 

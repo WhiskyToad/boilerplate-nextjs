@@ -13,6 +13,7 @@ export class TabManager {
       const tab = await chrome.tabs.get(tabId);
 
       if (!tab.url || this.isRestrictedUrl(tab.url)) {
+        this.logger.warn('Content script injection skipped for restricted URL', { url: tab.url });
         return false;
       }
 
@@ -20,13 +21,24 @@ export class TabManager {
         return true;
       }
 
+      const contentScriptFiles = [
+        'content/types.js',
+        'content/overlay-ui.js',
+        'content/auth-bridge.js',
+        'content/capture-handler.js',
+        'content/content.js'
+      ];
+
+      this.logger.debug('Injecting content scripts into tab', { tabId, files: contentScriptFiles });
+
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ['content/content.js']
+        files: contentScriptFiles
       });
 
       const isReady = await this.waitForContentScript(tabId, 5000);
       if (!isReady) {
+        this.logger.warn('Content script did not respond to readiness check', { tabId });
         return false;
       }
 

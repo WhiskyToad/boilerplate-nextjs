@@ -92,6 +92,13 @@ export class RecordingControls {
         this.startTimer();
         this.uiController.showSuccess('Recording started!');
         this.logger.info(`Started recording: "${title}"`);
+        // Optimistically update UI with recording state
+        this.uiController.updateUI(this.authState, {
+          isRecording: true,
+          isPaused: false,
+          demoId: response.data?.demoId ?? '',
+          steps: [],
+        });
       } else {
         this.uiController.showError(response.error || this.errorMessages.RECORDING_START_FAILED);
       }

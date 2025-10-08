@@ -1,7 +1,7 @@
 // Auth Bridge
 // Handles authentication messaging between web page and extension
 
-export class AuthBridge {
+class AuthBridge {
   private logger: any;
   private allowedOrigins: string[];
 
@@ -59,7 +59,27 @@ export class AuthBridge {
   }
 
   private isAllowedOrigin(origin: string): boolean {
-    return this.allowedOrigins.includes(origin);
+    if (this.allowedOrigins.includes('*')) {
+      return true;
+    }
+
+    return this.allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin.startsWith('http')) {
+        return allowedOrigin === origin;
+      }
+
+      // Support wildcard subdomains like *.example.com
+      if (allowedOrigin.startsWith('*.')) {
+        try {
+          const originUrl = new URL(origin);
+          return originUrl.hostname.endsWith(allowedOrigin.substring(2));
+        } catch {
+          return false;
+        }
+      }
+
+      return false;
+    });
   }
 }
 

@@ -124,20 +124,10 @@
     </div>
   </div>
 
-  <!-- Load utility modules -->
-  <script src="../utils/config.js"></script>
-  <script src="../utils/logger.js"></script>
-  <script src="../utils/errors.js"></script>
-  <script src="../utils/sanitize.js"></script>
-  <script src="../utils/secure-storage.js"></script>
-  <script src="../utils/auth-flow.js"></script>
-  <script src="../utils/api-client.js"></script>
-
-  <!-- Load popup modules -->
-  <script src="popup-api.js"></script>
-  <script src="types.js"></script>
-  <script src="ui-controller.js"></script>
-  <script src="recording-controls.js"></script>
-  <script src="popup.js"></script>
+    <!-- Load popup as ES module -->
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
+```
 </body>
 </html>

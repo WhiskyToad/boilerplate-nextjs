@@ -1,41 +1,32 @@
-// Popup API
-// Creates DemoFlowAPI instance for popup using ES6 imports
+// Background API
+// Creates DemoFlowAPI instance for background service worker using ES6 imports
 
 import { CONFIG } from '../utils/config.js';
-import { PopupLogger } from '../utils/logger.js';
+import { BackgroundLogger } from '../utils/logger.js';
 import { ERROR_MESSAGES } from '../utils/errors.js';
 import { SecureStorage } from '../utils/secure-storage.js';
 import { AuthFlowManager } from '../utils/auth-flow.js';
 import { APIClient } from '../utils/api-client.js';
 
-export class PopupAPI {
+export class BackgroundAPI {
   private authManager: any;
   private apiClient: any;
-  private listeners: Array<(state: any) => void> = [];
 
   constructor() {
-    this.authManager = new AuthFlowManager(CONFIG, PopupLogger, ERROR_MESSAGES, SecureStorage);
-    this.apiClient = new APIClient(CONFIG, PopupLogger, ERROR_MESSAGES, this.authManager);
-
-    // Setup auth state change listener
-    this.authManager.addListener((newState: any) => {
-      this.notifyListeners(newState);
-    });
+    this.authManager = new AuthFlowManager(CONFIG, BackgroundLogger, ERROR_MESSAGES, SecureStorage);
+    this.apiClient = new APIClient(CONFIG, BackgroundLogger, ERROR_MESSAGES, this.authManager);
   }
 
-  // Initialization
+  // Initialize
   async initialize(): Promise<void> {
     await this.authManager.initialize?.();
     if (!this.authManager.initialize) {
       await this.authManager.loadAuthState();
     }
+    BackgroundLogger.info('Background API initialized');
   }
 
   // Auth methods
-  async triggerAuthFlow(): Promise<void> {
-    return this.authManager.triggerAuthFlow();
-  }
-
   getAuthState(): any {
     return this.authManager.getAuthState();
   }
@@ -52,6 +43,10 @@ export class PopupAPI {
     return this.authManager.getValidToken();
   }
 
+  async triggerAuthFlow(): Promise<void> {
+    return this.authManager.triggerAuthFlow();
+  }
+
   async setAuthData(authData: any): Promise<void> {
     await this.authManager.setAuthData(authData);
   }
@@ -60,28 +55,24 @@ export class PopupAPI {
     await this.authManager.clearAuthState();
   }
 
-  addListener(callback: (state: any) => void): void {
-    this.listeners.push(callback);
+  addListener(listener: (state: any) => void): void {
+    this.authManager.addListener(listener);
   }
 
-  removeListener(callback: (state: any) => void): void {
-    this.listeners = this.listeners.filter(listener => listener !== callback);
+  removeListener(listener: (state: any) => void): void {
+    this.authManager.removeListener(listener);
   }
 
-  addAuthListener(callback: (authData: any) => void): void {
-    this.authManager.addAuthListener(callback);
+  addAuthListener(listener: (authData: any) => void): void {
+    this.authManager.addAuthListener(listener);
   }
 
-  removeAuthListener(callback: (authData: any) => void): void {
-    this.authManager.removeAuthListener(callback);
+  removeAuthListener(listener: (authData: any) => void): void {
+    this.authManager.removeAuthListener(listener);
   }
 
   notifyAuthCompletion(authData: any): void {
     this.authManager.notifyAuthCompletion(authData);
-  }
-
-  private notifyListeners(state: any): void {
-    this.listeners.forEach(listener => listener(state));
   }
 
   // API methods

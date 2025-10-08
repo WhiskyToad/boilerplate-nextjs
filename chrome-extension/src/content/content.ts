@@ -11,10 +11,14 @@ const CONTENT_Logger = {
 
 // Config for allowed origins
 const CONTENT_CONFIG = {
-  ALLOWED_ORIGINS: ['http://localhost:3000', 'https://your-domain.vercel.app']
+  ALLOWED_ORIGINS: ['*']
 };
 
 function isAllowedOrigin(origin: string): boolean {
+  if (CONTENT_CONFIG.ALLOWED_ORIGINS.includes('*')) {
+    return true;
+  }
+
   return CONTENT_CONFIG.ALLOWED_ORIGINS.includes(origin);
 }
 

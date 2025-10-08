@@ -1,7 +1,7 @@
 // Overlay UI
 // Manages visual recording indicator and element highlighting
 
-export class OverlayUI {
+class OverlayUI {
   private overlay: HTMLElement | null = null;
 
   constructor() {

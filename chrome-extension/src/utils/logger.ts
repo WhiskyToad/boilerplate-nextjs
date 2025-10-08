@@ -1,7 +1,7 @@
 // Centralized Logging System
 // Provides consistent logging across the extension
 
-import { isDevelopment } from './config';
+import { isDevelopment } from './config.js';
 
 export enum LogLevel {
   DEBUG = 0,
