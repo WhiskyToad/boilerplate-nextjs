@@ -7,7 +7,8 @@ import { useZoomEditing } from "../hooks/useZoomEditing";
 import { useBubbleEditing } from "../hooks/useBubbleEditing";
 import {
   generateStepTitle,
-  getStepType,
+  calculateAutoZoom,
+  DEFAULT_ZOOM,
   type StepData,
 } from "../utils/step-helpers";
 
@@ -131,6 +132,9 @@ export function StepsSidebar({
           {steps.map((step, index) => {
             const status = getStepStatus(index);
             const isCurrent = index === currentStepIndex;
+
+            const zoomState = editingZoom[index];
+            const autoZoom = calculateAutoZoom(step);
 
             return (
               <div key={step.id || index} className="space-y-0">
@@ -274,7 +278,9 @@ export function StepsSidebar({
                     {/* Zoom Controls */}
                     <ZoomSlider
                       label="Zoom"
-                      value={editingZoom[index]?.scale || 1.5}
+                      value={
+                        zoomState?.scale ?? autoZoom.scale ?? DEFAULT_ZOOM.scale
+                      }
                       min={1}
                       max={3}
                       step={0.1}
@@ -286,7 +292,11 @@ export function StepsSidebar({
 
                     <ZoomSlider
                       label="Focus X"
-                      value={editingZoom[index]?.focusX || 50}
+                      value={
+                        zoomState?.focusX ??
+                        autoZoom.focusX ??
+                        DEFAULT_ZOOM.focusX
+                      }
                       min={0}
                       max={100}
                       step={1}
@@ -299,7 +309,11 @@ export function StepsSidebar({
 
                     <ZoomSlider
                       label="Focus Y"
-                      value={editingZoom[index]?.focusY || 50}
+                      value={
+                        zoomState?.focusY ??
+                        autoZoom.focusY ??
+                        DEFAULT_ZOOM.focusY
+                      }
                       min={0}
                       max={100}
                       step={1}
