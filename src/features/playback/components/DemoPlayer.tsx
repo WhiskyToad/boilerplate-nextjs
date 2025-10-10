@@ -344,48 +344,32 @@ export function DemoPlayer({ steps, demoId, demoTitle }: DemoPlayerProps) {
               {/* Screenshot viewport */}
               {/* Screenshot viewport - wraps image at natural size */}
               <div className="relative overflow-hidden bg-white border-x border-b border-gray-700 rounded-b-xl shadow-2xl">
-                <img
-                  ref={imageRef}
-                  src={screenshotUrl}
-                  alt={`Step ${state.currentStepIndex + 1}`}
-                  className="block max-w-full max-h-full object-contain"
+                {/* Scaled container - everything inside scales together */}
+                <div
+                  className="relative inline-block"
                   style={{
                     transform: `scale(${imageScale})`,
                     transformOrigin: transformOrigin,
                     transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
-                />
+                >
+                  <img
+                    ref={imageRef}
+                    src={screenshotUrl}
+                    alt={`Step ${state.currentStepIndex + 1}`}
+                    className="block max-w-full max-h-full object-contain"
+                  />
 
-                {/* Element Highlight Overlay - Clean and Accurate */}
-                {highlightPosition && (
-                  <>
-                    {/* Clean highlight box */}
-                    <div
-                      className="absolute pointer-events-none z-30"
-                      style={{
-                        left: `${highlightPosition.x}px`,
-                        top: `${highlightPosition.y}px`,
-                        width: `${highlightPosition.width}px`,
-                        height: `${highlightPosition.height}px`,
-                        border: "3px solid #3B82F6",
-                        borderRadius: "4px",
-                        backgroundColor: "rgba(59, 130, 246, 0.1)",
-                        boxShadow:
-                          "0 0 0 4px rgba(59, 130, 246, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.5)",
-                        transition: "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-                      }}
+                  {/* Element Highlight - Bubble text only, no box */}
+                  {highlightPosition && getBubbleConfig(currentStep) && (
+                    <BubbleText
+                      config={getBubbleConfig(currentStep)!}
+                      highlightPosition={highlightPosition}
+                      imageScale={imageScale}
+                      transformOrigin={transformOrigin}
                     />
-
-                    {/* Bubble text annotation */}
-                    {getBubbleConfig(currentStep) && (
-                      <BubbleText
-                        config={getBubbleConfig(currentStep)!}
-                        highlightPosition={highlightPosition}
-                        imageScale={imageScale}
-                      />
-                    )}
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ) : (

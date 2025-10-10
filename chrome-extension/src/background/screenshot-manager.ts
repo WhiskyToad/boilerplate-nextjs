@@ -14,6 +14,7 @@ export class ScreenshotManager {
 
   async captureScreenshot(_tabId: number): Promise<string | null> {
     try {
+      // Capture immediately - no delays
       const screenshot = await chrome.tabs.captureVisibleTab({
         format: 'png',
         quality: 90

@@ -90,6 +90,18 @@ class DemoFlowCapture {
           sendResponse({ success: true });
           break;
 
+        case 'HIDE_OVERLAY':
+          this.overlayUI.hide();
+          sendResponse({ success: true });
+          break;
+
+        case 'SHOW_OVERLAY':
+          if (this.isCapturing) {
+            this.overlayUI.show();
+          }
+          sendResponse({ success: true });
+          break;
+
         default:
           CONTENT_Logger.warn('Unknown message type:', message.type);
           sendResponse({ success: false, error: 'Unknown message type' });
@@ -102,14 +114,15 @@ class DemoFlowCapture {
 
   private startCapture(_data: { demoId: string }): void {
     this.isCapturing = true;
-    this.overlayUI.show();
+    // Don't show overlay - no visual indicator during recording
+    // this.overlayUI.show();
     this.captureHandler.startCapture();
     CONTENT_Logger.info('Capture started');
   }
 
   private stopCapture(): void {
     this.isCapturing = false;
-    this.overlayUI.hide();
+    // this.overlayUI.hide();
     this.captureHandler.stopCapture();
     CONTENT_Logger.info('Capture stopped');
   }

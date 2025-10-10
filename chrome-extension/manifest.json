@@ -30,6 +30,7 @@
         "content/capture-handler.js",
         "content/content.js"
       ],
+      "css": ["assets/styles/content.css"],
       "run_at": "document_end"
     }
   ],

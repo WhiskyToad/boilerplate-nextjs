@@ -87,12 +87,17 @@ export const POST = withAuth(async (request: NextRequest, user: any, context: { 
   const { steps, replace_existing = false } = body;
 
   try {
-    // If replacing existing, delete all current steps
+    // If replacing existing, delete all current steps first
     if (replace_existing) {
-      await supabase
+      const { error: deleteError } = await supabase
         .from('demo_steps')
         .delete()
         .eq('demo_id', demoId);
+
+      if (deleteError) {
+        console.error('Error deleting existing steps:', deleteError);
+        throw new Error(`Failed to delete existing steps: ${deleteError.message}`);
+      }
     }
 
     // Insert new steps - remove any client-generated id fields since database auto-generates UUIDs
@@ -111,6 +116,7 @@ export const POST = withAuth(async (request: NextRequest, user: any, context: { 
       .select();
 
     if (insertError) {
+      console.error('Error inserting steps:', insertError);
       throw insertError;
     }
 

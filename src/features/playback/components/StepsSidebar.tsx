@@ -375,24 +375,6 @@ export function StepsSidebar({
                         </select>
                       </div>
 
-                      {/* Style Selector */}
-                      <div className="mt-3">
-                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">
-                          Style
-                        </label>
-                        <select
-                          value={editingBubble[index]?.style || "callout"}
-                          onChange={(e) =>
-                            handleBubbleChange(index, "style", e.target.value)
-                          }
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="tooltip">Tooltip</option>
-                          <option value="callout">Callout</option>
-                          <option value="speech">Speech Bubble</option>
-                        </select>
-                      </div>
-
                       {isSavingBubble && modifiedBubbleSteps.has(index) && (
                         <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
                           Saving...

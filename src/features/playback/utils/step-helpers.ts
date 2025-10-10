@@ -161,37 +161,46 @@ export function calculateAutoZoom(step: StepData): AutoZoomResult {
   let focusX = (centerX / viewport.width) * 100;
   let focusY = (centerY / viewport.height) * 100;
 
-  // Smart centering: pull toward 50% for comfortable viewing,
-  // but respect edge constraints to prevent clipping
-  const EDGE_THRESHOLD = 15; // Elements within 15% of edge stay at edge
-  const CENTER_TARGET = 50;
+  // Edge detection: check where element edges are, not just center
+  const leftEdge = (boundingRect.x / viewport.width) * 100;
+  const rightEdge = ((boundingRect.x + boundingRect.width) / viewport.width) * 100;
+  const topEdge = (boundingRect.y / viewport.height) * 100;
+  const bottomEdge = ((boundingRect.y + boundingRect.height) / viewport.height) * 100;
+
+  // Very aggressive edge detection - elements within 30% of edge snap to edge
+  const EDGE_THRESHOLD = 30;
+  // No margin - slam directly to the edge
+  const EDGE_MARGIN = 0;
 
   // Calculate how much of the element will be visible at each edge when zoomed
   const scaledElementWidth = (boundingRect.width * scale) / viewport.width * 100;
   const scaledElementHeight = (boundingRect.height * scale) / viewport.height * 100;
 
-  // Minimum safe distance from edge (half the scaled element size)
-  const minSafeX = scaledElementWidth / 2;
-  const maxSafeX = 100 - scaledElementWidth / 2;
-  const minSafeY = scaledElementHeight / 2;
-  const maxSafeY = 100 - scaledElementHeight / 2;
-
-  // If element is very close to an edge, keep it at the safe edge position
-  if (focusX < EDGE_THRESHOLD) {
-    focusX = Math.max(focusX, minSafeX);
-  } else if (focusX > (100 - EDGE_THRESHOLD)) {
-    focusX = Math.min(focusX, maxSafeX);
+  // For edge cases, use aggressive positioning with minimal margin
+  if (leftEdge < EDGE_THRESHOLD) {
+    // Element is on left edge - slam focus to left with minimal margin
+    focusX = Math.max(EDGE_MARGIN, scaledElementWidth / 2);
+  } else if (rightEdge > (100 - EDGE_THRESHOLD)) {
+    // Element is on right edge - slam focus to right with minimal margin
+    focusX = Math.min(100 - EDGE_MARGIN, 100 - scaledElementWidth / 2);
   } else {
-    // Element is not near an edge, pull toward center for better composition
+    // Element is in the middle - center on it, but keep it visible
+    const minSafeX = scaledElementWidth / 2;
+    const maxSafeX = 100 - scaledElementWidth / 2;
     focusX = clamp(focusX, minSafeX, maxSafeX);
   }
 
-  if (focusY < EDGE_THRESHOLD) {
-    focusY = Math.max(focusY, minSafeY);
-  } else if (focusY > (100 - EDGE_THRESHOLD)) {
-    focusY = Math.min(focusY, maxSafeY);
+  // Same logic for vertical
+  if (topEdge < EDGE_THRESHOLD) {
+    // Element is on top edge - slam focus to top with minimal margin
+    focusY = Math.max(EDGE_MARGIN, scaledElementHeight / 2);
+  } else if (bottomEdge > (100 - EDGE_THRESHOLD)) {
+    // Element is on bottom edge - slam focus to bottom with minimal margin
+    focusY = Math.min(100 - EDGE_MARGIN, 100 - scaledElementHeight / 2);
   } else {
-    // Element is not near an edge, pull toward center for better composition
+    // Element is in the middle - center on it, but keep it visible
+    const minSafeY = scaledElementHeight / 2;
+    const maxSafeY = 100 - scaledElementHeight / 2;
     focusY = clamp(focusY, minSafeY, maxSafeY);
   }
 

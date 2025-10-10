@@ -12,12 +12,14 @@ interface BubbleTextProps {
     height: number;
   };
   imageScale: number;
+  transformOrigin: string;
 }
 
 export function BubbleText({
   config,
   highlightPosition,
   imageScale,
+  transformOrigin,
 }: BubbleTextProps) {
   const [position, setPosition] = useState<{
     x: number;
@@ -30,7 +32,7 @@ export function BubbleText({
   });
 
   useEffect(() => {
-    // Calculate bubble position relative to highlighted element
+    // Calculate element center in image coordinates
     const elementCenterX = highlightPosition.x + highlightPosition.width / 2;
     const elementCenterY = highlightPosition.y + highlightPosition.height / 2;
 
@@ -39,9 +41,11 @@ export function BubbleText({
     let bubbleY = highlightPosition.y;
 
     // Auto-position: choose best position based on element location
+    // Use image coordinates to determine placement
     if (placement === "auto") {
-      // If element is in top half, show bubble below
-      if (elementCenterY < window.innerHeight / 2) {
+      // Simple rule: if element is in top 60% of image, show bubble below
+      // Otherwise show above
+      if (elementCenterY < highlightPosition.height * 3) {
         placement = "bottom";
         bubbleY = highlightPosition.y + highlightPosition.height;
       } else {
@@ -68,21 +72,13 @@ export function BubbleText({
       }
     }
 
+    // Position is in image coordinates - browser will scale with transform
     setPosition({ x: bubbleX, y: bubbleY, placement });
-  }, [highlightPosition, config.position, imageScale]);
+  }, [highlightPosition, config.position]);
 
-  const bubbleStyle = config.style || "callout";
-
-  // Base classes for all bubble styles
+  // Message bubble style - white background with subtle shadow
   const baseClasses =
-    "absolute z-40 px-4 py-2 rounded-lg shadow-xl font-medium text-sm pointer-events-none";
-
-  // Style-specific classes
-  const styleClasses = {
-    tooltip: "bg-gray-900 text-white",
-    callout: "bg-blue-500 text-white",
-    speech: "bg-white text-gray-900 border-2 border-blue-500",
-  };
+    "absolute z-40 px-4 py-3 rounded-2xl shadow-lg font-medium text-sm pointer-events-none bg-white text-gray-900 border border-gray-200";
 
   // Position-specific transform
   const getTransform = () => {
@@ -100,27 +96,9 @@ export function BubbleText({
     }
   };
 
-  // Arrow/pointer for the bubble
-  const getArrowClasses = () => {
-    const arrowBase = "absolute w-0 h-0 border-8 border-transparent";
-
-    switch (position.placement) {
-      case "top":
-        return `${arrowBase} border-t-${bubbleStyle === "speech" ? "blue-500" : bubbleStyle === "callout" ? "blue-500" : "gray-900"} left-1/2 -translate-x-1/2 -bottom-4`;
-      case "bottom":
-        return `${arrowBase} border-b-${bubbleStyle === "speech" ? "blue-500" : bubbleStyle === "callout" ? "blue-500" : "gray-900"} left-1/2 -translate-x-1/2 -top-4`;
-      case "left":
-        return `${arrowBase} border-l-${bubbleStyle === "speech" ? "blue-500" : bubbleStyle === "callout" ? "blue-500" : "gray-900"} top-1/2 -translate-y-1/2 -right-4`;
-      case "right":
-        return `${arrowBase} border-r-${bubbleStyle === "speech" ? "blue-500" : bubbleStyle === "callout" ? "blue-500" : "gray-900"} top-1/2 -translate-y-1/2 -left-4`;
-      default:
-        return `${arrowBase} border-t-gray-900 left-1/2 -translate-x-1/2 -bottom-4`;
-    }
-  };
-
   return (
     <div
-      className={`${baseClasses} ${styleClasses[bubbleStyle]} animate-in fade-in zoom-in-95 duration-300`}
+      className={`${baseClasses} animate-in fade-in zoom-in-95 duration-300`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -131,7 +109,7 @@ export function BubbleText({
       }}
     >
       {config.text}
-      {/* Arrow/pointer */}
+      {/* Arrow/pointer - message bubble style */}
       <div
         className="absolute"
         style={{
@@ -153,33 +131,23 @@ export function BubbleText({
               ? "top"
               : position.placement === "left"
                 ? "right"
-                : "left"]: "-8px",
+                : "left"]: "-6px",
         }}
       >
         <div
-          className={`w-0 h-0 border-8 border-transparent ${
+          className={`w-0 h-0 border-[6px] border-transparent ${
             position.placement === "top"
-              ? `border-t-${bubbleStyle === "speech" ? "white" : bubbleStyle === "callout" ? "blue-500" : "gray-900"}`
+              ? "border-t-white"
               : position.placement === "bottom"
-                ? `border-b-${bubbleStyle === "speech" ? "white" : bubbleStyle === "callout" ? "blue-500" : "gray-900"}`
+                ? "border-b-white"
                 : position.placement === "left"
-                  ? `border-l-${bubbleStyle === "speech" ? "white" : bubbleStyle === "callout" ? "blue-500" : "gray-900"}`
-                  : `border-r-${bubbleStyle === "speech" ? "white" : bubbleStyle === "callout" ? "blue-500" : "gray-900"}`
+                  ? "border-l-white"
+                  : "border-r-white"
           }`}
+          style={{
+            filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))"
+          }}
         />
-        {bubbleStyle === "speech" && (
-          <div
-            className={`absolute w-0 h-0 border-8 border-transparent ${
-              position.placement === "top"
-                ? "border-t-blue-500 -top-[18px] left-1/2 -translate-x-1/2"
-                : position.placement === "bottom"
-                  ? "border-b-blue-500 -bottom-[18px] left-1/2 -translate-x-1/2"
-                  : position.placement === "left"
-                    ? "border-l-blue-500 -left-[18px] top-1/2 -translate-y-1/2"
-                    : "border-r-blue-500 -right-[18px] top-1/2 -translate-y-1/2"
-            }`}
-          />
-        )}
       </div>
     </div>
   );

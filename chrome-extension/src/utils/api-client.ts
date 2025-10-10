@@ -88,9 +88,12 @@ export class APIClient {
 
       if (!response.ok) {
         this.logger.error('API Error Response:', responseData);
+        this.logger.error('Response status:', response.status);
+        this.logger.error('Response statusText:', response.statusText);
         throw new Error(responseData.error || this.errorMessages.SERVER_ERROR);
       }
 
+      this.logger.debug('API Success Response:', responseData);
       return responseData;
     } catch (error) {
       clearTimeout(timeout);
@@ -131,21 +134,36 @@ export class APIClient {
     const stepsArray = Array.isArray(steps) ? steps : [steps];
 
     this.logger.info(`💾 Saving ${stepsArray.length} steps (replace_existing: true)`);
+    this.logger.debug('Request URL:', `/api/demos/${demoId}/steps`);
+    this.logger.debug('First step sample:', stepsArray[0]);
 
-    const response = await this.request(`/api/demos/${demoId}/steps`, {
-      method: 'POST',
-      body: JSON.stringify({
-        steps: stepsArray,
-        replace_existing: true,
-      }),
-    });
+    try {
+      const response = await this.request(`/api/demos/${demoId}/steps`, {
+        method: 'POST',
+        body: JSON.stringify({
+          steps: stepsArray,
+          replace_existing: true,
+        }),
+      });
 
-    if (response.success && response.data?.steps) {
-      this.logger.debug('Steps saved successfully');
-      return response.data.steps;
+      this.logger.debug('saveSteps response received');
+      this.logger.debug('response.success:', response.success);
+      this.logger.debug('response.data:', response.data);
+      this.logger.debug('response.data?.steps:', response.data?.steps);
+
+      if (response.success && response.data?.steps) {
+        this.logger.info(`✅ Steps saved successfully: ${response.data.steps.length} steps`);
+        return response.data.steps;
+      }
+
+      this.logger.error('Response validation failed! Full response:', JSON.stringify(response, null, 2));
+      throw new Error('Invalid response format from save steps API');
+    } catch (error) {
+      this.logger.error('Exception in saveSteps:', error);
+      this.logger.error('Error message:', error instanceof Error ? error.message : String(error));
+      this.logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      throw error;
     }
-
-    throw new Error('Invalid response format from save steps API');
   }
 
   async updateDemo(demoId: string, updates: any): Promise<any> {

@@ -128,15 +128,13 @@ class CaptureHandler {
   }
 
   setupEventListeners(): void {
-    // Capture user interactions
+    // Capture user interactions in capture phase (before target's handlers run)
+    // This ensures we capture BEFORE the DOM changes from the interaction
     document.addEventListener('click', this.handleClick.bind(this), true);
     document.addEventListener('input', this.handleInput.bind(this), true);
     document.addEventListener('change', this.handleChange.bind(this), true);
     document.addEventListener('submit', this.handleSubmit.bind(this), true);
     document.addEventListener('keydown', this.handleKeydown.bind(this), true);
-
-    // Capture hover for better UX (throttled)
-    document.addEventListener('mouseover', this.throttle(this.handleMouseover.bind(this), 100), true);
   }
 
   startCapture(): void {
@@ -203,7 +201,8 @@ class CaptureHandler {
 
     await this.sendStep(stepData);
     this.updateLastStep(element, 'click');
-    this.overlayUI.highlightElement(element);
+    // Highlight disabled for natural recording
+    // this.overlayUI.highlightElement(element);
   }
 
   private async handleInput(event: Event): Promise<void> {
@@ -369,19 +368,15 @@ class CaptureHandler {
     }
   }
 
-  private handleMouseover(event: MouseEvent): void {
-    if (!this.isCapturing) return;
-
-    const element = event.target as Element;
-
-    // Don't highlight our overlay elements
-    if (element.closest('.demoflow-overlay')) return;
-
-    // Only highlight interactive elements
-    if (this.isInteractiveElement(element)) {
-      this.overlayUI.previewElement(element);
-    }
-  }
+  // Hover preview disabled to prevent boxes showing in screenshots
+  // private handleMouseover(event: MouseEvent): void {
+  //   if (!this.isCapturing) return;
+  //   const element = event.target as Element;
+  //   if (element.closest('.demoflow-overlay')) return;
+  //   if (this.isInteractiveElement(element)) {
+  //     this.overlayUI.previewElement(element);
+  //   }
+  // }
 
   private captureElement(element: Element): ElementData {
     const rect = element.getBoundingClientRect();
@@ -426,8 +421,9 @@ class CaptureHandler {
       // Context
       url: window.location.href,
       viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        // Use visualViewport for actual visible area (excludes browser UI)
+        width: window.visualViewport?.width || window.innerWidth,
+        height: window.visualViewport?.height || window.innerHeight,
         scrollX: window.scrollX,
         scrollY: window.scrollY
       }
@@ -497,15 +493,15 @@ class CaptureHandler {
     return '/' + parts.join('/');
   }
 
-  private isInteractiveElement(element: Element): boolean {
-    const interactiveTags = ['button', 'a', 'input', 'select', 'textarea'];
-    const interactiveRoles = ['button', 'link', 'tab', 'menuitem'];
-
-    return interactiveTags.includes(element.tagName.toLowerCase()) ||
-           interactiveRoles.includes(element.getAttribute('role') || '') ||
-           (element as any).onclick !== null ||
-           (element as HTMLElement).style.cursor === 'pointer';
-  }
+  // isInteractiveElement removed (was only used for hover preview)
+  // private isInteractiveElement(element: Element): boolean {
+  //   const interactiveTags = ['button', 'a', 'input', 'select', 'textarea'];
+  //   const interactiveRoles = ['button', 'link', 'tab', 'menuitem'];
+  //   return interactiveTags.includes(element.tagName.toLowerCase()) ||
+  //          interactiveRoles.includes(element.getAttribute('role') || '') ||
+  //          (element as any).onclick !== null ||
+  //          (element as HTMLElement).style.cursor === 'pointer';
+  // }
 
   private async sendStep(stepData: ContentStepData): Promise<void> {
     try {
@@ -530,8 +526,9 @@ class CaptureHandler {
         url: window.location.href,
         title: document.title,
         viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight
+          // Use visualViewport for actual visible area (excludes browser UI)
+          width: window.visualViewport?.width || window.innerWidth,
+          height: window.visualViewport?.height || window.innerHeight
         }
       }
     };
@@ -539,27 +536,26 @@ class CaptureHandler {
     this.sendStep(stepData);
   }
 
-  // Utility function to throttle frequent events
-  private throttle<T extends (...args: any[]) => any>(func: T, delay: number): T {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let lastExecTime = 0;
-    return ((...args: any[]) => {
-      const currentTime = Date.now();
-
-      if (currentTime - lastExecTime > delay) {
-        func(...args);
-        lastExecTime = currentTime;
-      } else {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        timeoutId = setTimeout(() => {
-          func(...args);
-          lastExecTime = Date.now();
-        }, delay - (currentTime - lastExecTime));
-      }
-    }) as T;
-  }
+  // Throttle utility removed (was only used for hover preview)
+  // private throttle<T extends (...args: any[]) => any>(func: T, delay: number): T {
+  //   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  //   let lastExecTime = 0;
+  //   return ((...args: any[]) => {
+  //     const currentTime = Date.now();
+  //     if (currentTime - lastExecTime > delay) {
+  //       func(...args);
+  //       lastExecTime = currentTime;
+  //     } else {
+  //       if (timeoutId) {
+  //         clearTimeout(timeoutId);
+  //       }
+  //       timeoutId = setTimeout(() => {
+  //         func(...args);
+  //       lastExecTime = Date.now();
+  //       }, delay - (currentTime - lastExecTime));
+  //     }
+  //   }) as T;
+  // }
 }
 
 // Export to globalThis

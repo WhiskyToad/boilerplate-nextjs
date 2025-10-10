@@ -7,7 +7,7 @@
     "build": "npm run clean && npm run compile && npm run copy-assets",
     "clean": "rm -rf dist/*",
     "compile": "tsc",
-    "copy-assets": "cp -r assets manifest.json dist/ && cp src/popup/popup.html src/popup/popup.css dist/popup/ && mkdir -p dist/assets/styles && touch dist/assets/styles/content.css",
+    "copy-assets": "cp -r assets manifest.json dist/ && cp src/popup/popup.html src/popup/popup.css dist/popup/",
     "dev": "npm run build && npm run watch",
     "watch": "concurrently \"tsc --watch\" \"chokidar 'assets/**/*' 'manifest.json' 'src/**/*.html' 'src/**/*.css' -c 'npm run copy-assets'\"",
     "zip": "npm run build && cd dist && zip -r ../demoflow-extension.zip .",
