@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Allow: /docs
+Allow: /docs/*
+Allow: /login
+Allow: /signup
+Allow: /auth/forgot-password
+Allow: /auth/confirmed
+Allow: /auth/auth-code-error
+Allow: /auth/reset-password
+
+# Block private/authenticated routes
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /settings
+Disallow: /api/
+
+# Block test/development routes
+Disallow: /test-dev-widget
+
+# Allow sitemap
+Sitemap: https://feedback-nu-topaz.vercel.app/sitemap.xml

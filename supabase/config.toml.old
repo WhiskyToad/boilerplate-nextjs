@@ -1,0 +1,28 @@
+[project]
+# A string used to distinguish different Supabase projects on the same host. Defaults to the
+# working directory name when running `supabase init`.
+name = "nextjs-boilerplate"
+
+[api]
+# Port to use for the API URL.
+port = 54321
+
+[auth]
+# Enable email confirmations.
+enable_confirmations = true
+
+[db]
+# Port to use for the database URL.
+port = 54322
+
+[studio]
+# Port to use for Supabase Studio.
+port = 54323
+
+[functions]
+# Port to use for the Functions server.
+port = 54324
+
+[edge]
+# Port to use for the Edge Runtime server.
+port = 54325
