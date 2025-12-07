@@ -12,7 +12,8 @@ migrations/
 │
 ├── optional/               # Add-on features
 │   ├── admin.sql          # Admin activity logging & enhanced views
-│   └── security.sql       # Comprehensive security & audit logging
+│   ├── security.sql       # Comprehensive security & audit logging
+│   └── waitlist.sql       # Collect early-access signups
 │
 └── archive/               # Old monolithic migrations (deprecated)
 ```
@@ -27,6 +28,7 @@ migrations/
    - ✅ **Base** (always included) - Profiles, subscriptions, usage, admin roles
    - ☑️ **Teams & Collaboration** - Team creation, invites, members
    - ☑️ **Admin Activity Logging** - Track admin actions
+   - ☑️ **Waitlist** - Collect pre-launch signups
    - ☑️ **Security & Audit** - Failed logins, rate limits, session tracking
 4. Click "Copy SQL"
 5. Paste into Supabase SQL Editor
@@ -38,7 +40,7 @@ Combine the modules you need:
 
 **Solo app (no teams):**
 ```bash
-cat core/00_base.sql optional/admin.sql > combined.sql
+cat core/00_base.sql optional/admin.sql optional/waitlist.sql > combined.sql
 ```
 
 **Teams app with security:**
@@ -48,7 +50,7 @@ cat core/00_base.sql core/01_teams.sql optional/security.sql > combined.sql
 
 **Full-featured app:**
 ```bash
-cat core/00_base.sql core/01_teams.sql optional/admin.sql optional/security.sql > combined.sql
+cat core/00_base.sql core/01_teams.sql optional/admin.sql optional/waitlist.sql optional/security.sql > combined.sql
 ```
 
 ## What Each Module Provides
@@ -71,6 +73,11 @@ cat core/00_base.sql core/01_teams.sql optional/admin.sql optional/security.sql 
 - `admin_activity` table for tracking admin actions
 - `profiles_with_auth` view combining profile + auth data
 - Enhanced admin-only policies
+
+### Optional: Waitlist (Optional)
+- `waitlist_entries` table for early-access signups (email, name, source, status)
+- RLS allows anon/auth users to join; only admins can read/update/delete
+- Invitation + joined timestamps to track conversion
 
 ### Optional: Security (Optional)
 - `audit_logs` - Comprehensive event logging

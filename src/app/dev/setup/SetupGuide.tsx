@@ -133,6 +133,7 @@ export function SetupGuide() {
   const [includeTeams, setIncludeTeams] = useState(false);
   const [includeAdmin, setIncludeAdmin] = useState(true);
   const [includeSecurity, setIncludeSecurity] = useState(false);
+  const [includeWaitlist, setIncludeWaitlist] = useState(true);
   const [sql, setSql] = useState<string>('');
   const [loadingSql, setLoadingSql] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -156,6 +157,7 @@ export function SetupGuide() {
         teams: includeTeams.toString(),
         admin: includeAdmin.toString(),
         security: includeSecurity.toString(),
+        waitlist: includeWaitlist.toString(),
       });
       fetch(`/api/migrations?${params}`)
         .then(res => res.json())
@@ -168,7 +170,7 @@ export function SetupGuide() {
           setLoadingSql(false);
         });
     }
-  }, [includeTeams, includeAdmin, includeSecurity, expandedSections]);
+  }, [includeTeams, includeAdmin, includeSecurity, includeWaitlist, expandedSections]);
 
   const copySql = async () => {
     await navigator.clipboard.writeText(sql);
@@ -335,6 +337,21 @@ export function SetupGuide() {
                                 <div className="font-medium text-gray-900">Admin Activity Logging</div>
                                 <div className="text-sm text-gray-600">
                                   Track admin actions and enhanced admin views
+                                </div>
+                              </div>
+                            </label>
+
+                            <label className="flex items-start gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 cursor-pointer transition-all">
+                              <input
+                                type="checkbox"
+                                checked={includeWaitlist}
+                                onChange={(e) => setIncludeWaitlist(e.target.checked)}
+                                className="mt-0.5"
+                              />
+                              <div>
+                                <div className="font-medium text-gray-900">Waitlist</div>
+                                <div className="text-sm text-gray-600">
+                                  Collect early access signups with RLS-guarded waitlist table
                                 </div>
                               </div>
                             </label>

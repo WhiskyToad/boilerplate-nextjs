@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const includeTeams = searchParams.get('teams') === 'true';
     const includeAdmin = searchParams.get('admin') === 'true';
     const includeSecurity = searchParams.get('security') === 'true';
+    const includeWaitlist = searchParams.get('waitlist') === 'true';
 
     const migrationsPath = join(process.cwd(), 'supabase', 'migrations');
 
@@ -27,6 +28,11 @@ export async function GET(request: NextRequest) {
       parts.push(admin);
     }
 
+    if (includeWaitlist) {
+      const waitlist = readFileSync(join(migrationsPath, 'optional', 'waitlist.sql'), 'utf8');
+      parts.push(waitlist);
+    }
+
     if (includeSecurity) {
       const security = readFileSync(join(migrationsPath, 'optional', 'security.sql'), 'utf8');
       parts.push(security);
@@ -42,6 +48,7 @@ export async function GET(request: NextRequest) {
         teams: includeTeams,
         admin: includeAdmin,
         security: includeSecurity,
+        waitlist: includeWaitlist,
       }
     });
 
