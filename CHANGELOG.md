@@ -83,7 +83,7 @@ All notable enhancements and features added to the boilerplate.
 ### 🧹 Cleanup & Simplification
 
 #### Removed
-- **BoostToad branding** - Removed feedback widget and tracking scripts
+- **Legacy branding** - Removed feedback widget and tracking scripts
 - **Hardcoded hero content** - Hero now pulls from site-config.ts
 - **Fake social proof** - Removed "50+ developers" and other placeholder stats
 

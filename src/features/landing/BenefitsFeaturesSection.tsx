@@ -2,6 +2,7 @@
 
 import { FiX, FiCheck } from "react-icons/fi";
 import Image from "next/image";
+import { siteConfig } from "@/config/site-config";
 
 export function BenefitsFeaturesSection() {
   const problems = [
@@ -65,7 +66,7 @@ export function BenefitsFeaturesSection() {
               <div className="relative">
                 <Image
                   src="/logo/icon.svg"
-                  alt="Boost Toad"
+                  alt={`${siteConfig.name} logo`}
                   width={40}
                   height={40}
                   className="rounded-xl shadow-md"

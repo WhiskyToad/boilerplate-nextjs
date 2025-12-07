@@ -10,7 +10,7 @@ DECLARE
 BEGIN
   -- Set app URL based on environment
   -- You'll need to update this URL to match your production domain
-  app_url := 'https://www.boosttoad.com';
+  app_url := 'https://www.example.com';
   
   -- Log the attempt
   RAISE LOG 'Sending welcome email for user: %', NEW.email;
@@ -56,7 +56,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 
 -- To set up welcome emails:
 -- 1. Go to Authentication > Settings in Supabase dashboard
--- 2. Add webhook URL: https://www.boosttoad.com/api/auth/webhook
+-- 2. Add webhook URL: https://www.example.com/api/auth/webhook
 -- 3. Select "user.created" event
 -- 4. This will call your API when users sign up
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { siteConfig } from "@/config/site-config";
+
 export function Footer() {
   const footerLinks = {
     Product: [
@@ -25,16 +27,15 @@ export function Footer() {
             <div className="flex items-center gap-3 mb-6">
               <img
                 src="/logo/icon.svg"
-                alt="Boost Toad Logo"
+                alt={`${siteConfig.name} logo`}
                 className="w-8 h-8"
               />
               <span className="text-xl font-bold text-base-content">
-                Boost Toad
+                {siteConfig.name}
               </span>
             </div>
             <p className="text-base-content/70 text-sm leading-relaxed mb-6 max-w-sm">
-              The easiest way to collect user feedback, track bugs, and improve
-              your product. Built for developers, loved by users.
+              {siteConfig.description}
             </p>
           </div>
 
@@ -63,7 +64,7 @@ export function Footer() {
         {/* Bottom section */}
         <div className="mt-16 pt-8 border-t border-base-300/50 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-base-content/50">
-            © {new Date().getFullYear()} Boost Toad. All rights reserved.
+            © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
           </p>
           <div className="flex items-center space-x-6">
             <a

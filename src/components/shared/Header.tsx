@@ -6,6 +6,7 @@ import Image from "next/image";
 import { FiMenu, FiX } from "react-icons/fi";
 import { Button } from "@/components/ui/button/Button";
 import { FeaturesDropdown } from "./FeaturesDropdown/FeaturesDropdown";
+import { siteConfig } from "@/config/site-config";
 
 export interface HeaderProps {
   variant?: "landing" | "dashboard" | "docs";
@@ -69,7 +70,7 @@ export function Header({
           <div className="relative">
             <Image
               src="/logo/icon.svg"
-              alt="Boost Toad"
+              alt={`${siteConfig.name} logo`}
               width={logoSize}
               height={logoSize}
               className="group-hover:scale-105 transition-all duration-300"
@@ -81,7 +82,7 @@ export function Header({
                 variant === "landing" ? "text-gray-900" : "text-base-content"
               }`}
             >
-              Boost Toad
+              {siteConfig.name}
             </span>
             {!(variant === "landing" && isScrolled) && (
               <span
@@ -92,8 +93,8 @@ export function Header({
                 }`}
               >
                 {variant === "landing"
-                  ? "Feedback Made Simple"
-                  : subtitle || "Dashboard"}
+                  ? siteConfig.tagline
+                  : subtitle || siteConfig.tagline}
               </span>
             )}
           </div>
