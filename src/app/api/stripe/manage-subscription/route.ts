@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { stripe } from '@/lib/stripe';
+import { getStripeInstance, isStripeConfigured } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isStripeConfigured()) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured. Add STRIPE_SECRET_KEY and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable billing.' },
+        { status: 503 }
+      );
+    }
+
+    const stripe = getStripeInstance();
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe client unavailable. Verify STRIPE_SECRET_KEY configuration.' },
+        { status: 503 }
+      );
+    }
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

@@ -14,6 +14,8 @@ export type SetupStep =
   | 'supabase-account'
   | 'supabase-project'
   | 'supabase-keys'
+  | 'supabase-sql-editor'
+  | 'copy-sql'
   | 'supabase-db'
   | 'env-file'
   | 'env-supabase'

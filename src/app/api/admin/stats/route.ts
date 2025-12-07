@@ -47,15 +47,15 @@ export async function GET(request: NextRequest) {
     // This is a simplified example - you'll need to adjust based on your schema
     const { data: subscriptions } = await supabase
       .from('user_subscriptions')
-      .select('plan')
+      .select('tier')
       .eq('status', 'active');
 
     let totalRevenue = 0;
     if (subscriptions) {
       subscriptions.forEach((sub) => {
         // Simple MRR calculation - adjust based on your pricing
-        if (sub.plan === 'pro') totalRevenue += 19;
-        if (sub.plan === 'teams') totalRevenue += 49;
+        if (sub.tier === 'pro') totalRevenue += 19;
+        if (sub.tier === 'teams') totalRevenue += 49;
       });
     }
 

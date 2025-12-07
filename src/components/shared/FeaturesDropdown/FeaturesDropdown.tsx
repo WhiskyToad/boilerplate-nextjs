@@ -3,8 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { FiSun, FiMoon, FiTrendingUp, FiHeart, FiCalendar, FiBook, FiChevronDown } from 'react-icons/fi'
+import type { IconType } from 'react-icons'
 
-const features = [
+type FeatureItem = {
+  id: string;
+  name: string;
+  icon: IconType;
+  description: string;
+  href: string;
+  color: string;
+  badge?: string;
+};
+
+const features: FeatureItem[] = [
   {
     id: 'morning-prompts',
     name: 'Morning Prompts',

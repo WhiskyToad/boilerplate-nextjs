@@ -1,7 +1,8 @@
 "use client";
 
-import { FiCheckCircle, FiCopy } from "react-icons/fi";
+import type { JSX } from "react";
 import { useState } from "react";
+import { FiCheckCircle, FiCopy } from "react-icons/fi";
 
 interface MarkdownRendererProps {
   content: string;
