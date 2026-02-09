@@ -33,3 +33,13 @@
 ## Security & Configuration Tips
 - Keep secrets in `.env.local`; never commit them. Run `npm run setup:check` after updating env variables.
 - When modifying auth, billing, or analytics flows, review related config in `src/config` and update documentation in `docs/` as needed.
+
+## Local Agent Pack
+- Specialized implementation agents are available in `docs/agents/`.
+- Use `docs/agents/saas-feature-orchestrator-agent.md` for end-to-end feature work.
+- Use focused agents for narrow tasks:
+  - UI/UX: `docs/agents/frontend-ui-design-agent.md`
+  - Forms: `docs/agents/react-hook-form-agent.md`
+  - Client state: `docs/agents/zustand-state-agent.md`
+  - Server-state/data fetching: `docs/agents/react-query-data-agent.md`
+  - Data layer and migrations: `docs/agents/supabase-data-agent.md`

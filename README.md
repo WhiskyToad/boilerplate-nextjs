@@ -218,6 +218,7 @@ All security features are **automatically configured** from your `.env.local` - 
 
 ### Architecture & Patterns
 - **[UNIVERSAL_SAAS_PATTERNS.md](./docs/UNIVERSAL_SAAS_PATTERNS.md)** - Reusable SaaS patterns and architecture
+- **[Agent Pack](./docs/agents/README.md)** - Specialized build agents for UI, forms, state, React Query, and data layer delivery
 - **[Component Library](http://localhost:6006)** - View all components in Storybook (`npm run storybook`)
 
 ### Code Organization
