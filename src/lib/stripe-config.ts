@@ -22,7 +22,7 @@ export const TIER_PRICING = {
     projects: 1,
     apiCalls: 1000,
     teamMembers: 1,
-    features: ['Basic dashboard', 'Community support', 'Core features', 'Documentation access']
+    features: ['Basic workspace', 'Community support', 'Core features', 'Documentation access']
   },
   pro: {
     name: 'Pro', 

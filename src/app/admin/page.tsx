@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { FiUsers, FiFolder, FiDollarSign, FiActivity } from "react-icons/fi";
 import { Card } from "@/components/ui/card/Card";
+import { ROUTES } from "@/config/routes";
 
 interface AdminStats {
   totalUsers: number;
@@ -30,12 +31,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push(ROUTES.auth.login);
       return;
     }
 
     if (user && !ADMIN_EMAILS.includes(user.email || '')) {
-      router.push('/dashboard');
+      router.push(ROUTES.app.home);
       return;
     }
 

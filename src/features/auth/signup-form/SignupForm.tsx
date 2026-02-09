@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { ROUTES } from '@/config/routes'
 
 interface SignupFormProps {
   onSuccess?: () => void
@@ -144,7 +145,7 @@ export function SignupForm({ onSuccess, onToggleMode, showToggle = true }: Signu
                   />
                   <span className="label-text text-sm">
                     I agree to the{' '}
-                    <a href="/terms" target="_blank" className="link link-primary">
+                    <a href={ROUTES.terms} target="_blank" className="link link-primary">
                       Terms of Service
                     </a>
                   </span>
@@ -164,7 +165,7 @@ export function SignupForm({ onSuccess, onToggleMode, showToggle = true }: Signu
                   />
                   <span className="label-text text-sm">
                     I agree to the{' '}
-                    <a href="/privacy" target="_blank" className="link link-primary">
+                    <a href={ROUTES.privacy} target="_blank" className="link link-primary">
                       Privacy Policy
                     </a>
                   </span>

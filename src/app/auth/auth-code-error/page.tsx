@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button/Button'
 import { Card, CardContent } from '@/components/ui/card/Card'
 import { useRouter } from 'next/navigation'
+import { ROUTES } from '@/config/routes'
 
 export default function AuthCodeErrorPage() {
   const router = useRouter()
@@ -27,7 +28,7 @@ export default function AuthCodeErrorPage() {
 
             <div className="space-y-3">
               <Button
-                onClick={() => router.push('/signup')}
+                onClick={() => router.push(ROUTES.auth.signup)}
                 variant="primary"
                 className="w-full"
               >
@@ -35,7 +36,7 @@ export default function AuthCodeErrorPage() {
               </Button>
               
               <Button
-                onClick={() => router.push('/login')}
+                onClick={() => router.push(ROUTES.auth.login)}
                 variant="outline"
                 className="w-full"
               >
@@ -43,7 +44,7 @@ export default function AuthCodeErrorPage() {
               </Button>
               
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push(ROUTES.home)}
                 className="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
               >
                 ← Back to Home

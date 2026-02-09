@@ -116,7 +116,7 @@ export function SimplePricing({ onGetStarted }: SimplePricingProps) {
             </div>
             <div className="text-center">
               <div className="font-medium text-base-content mb-1">Team Members</div>
-              <div className="text-base-content/60">People who can access your dashboard and collaborate</div>
+              <div className="text-base-content/60">People who can access your app workspace and collaborate</div>
             </div>
           </div>
         </div>

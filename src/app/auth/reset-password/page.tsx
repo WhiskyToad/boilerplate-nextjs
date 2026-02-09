@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button/Button'
 import { Input } from '@/components/ui/input/Input'
 import { Card, CardContent } from '@/components/ui/card/Card'
 import { useAuth } from '@/hooks/useAuth'
+import { DEFAULT_AUTHENTICATED_ROUTE, ROUTES, withRedirect } from '@/config/routes'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -14,15 +15,15 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const { session } = useAuth()
+  const { session, loading: authLoading } = useAuth()
 
   // Check if we have a valid session from the password reset link
   useEffect(() => {
-    if (!session) {
+    if (!authLoading && !session) {
       // If no session, redirect to login with message
-      router.push('/login?message=invalid-reset-link')
+      router.push(withRedirect(ROUTES.auth.login, DEFAULT_AUTHENTICATED_ROUTE) + '&message=invalid-reset-link')
     }
-  }, [session, router])
+  }, [authLoading, session, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,9 +53,9 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess(true)
-      // Redirect to dashboard after 2 seconds
+      // Redirect to app shell after 2 seconds
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push(ROUTES.app.home)
       }, 2000)
     } catch (error: any) {
       setError(error.message)
@@ -63,7 +64,7 @@ export default function ResetPasswordPage() {
     }
   }
 
-  if (!session) {
+  if (authLoading || !session) {
     return (
       <div className="min-h-screen bg-base-100 flex items-center justify-center">
         <div className="loading loading-spinner loading-lg text-primary"></div>
@@ -84,7 +85,7 @@ export default function ResetPasswordPage() {
                 Password Updated!
               </h2>
               <p className="text-base-content/70 text-sm mb-4">
-                Your password has been successfully updated. Redirecting to dashboard...
+                Your password has been successfully updated. Redirecting to your app...
               </p>
               <div className="loading loading-spinner loading-sm text-primary"></div>
             </CardContent>
@@ -150,7 +151,7 @@ export default function ResetPasswordPage() {
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push(withRedirect(ROUTES.auth.login, DEFAULT_AUTHENTICATED_ROUTE))}
                   className="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
                 >
                   ← Back to Sign In

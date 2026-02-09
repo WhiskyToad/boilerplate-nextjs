@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { FiCopy, FiCheckCircle, FiExternalLink, FiCheck, FiX, FiBook, FiCode } from 'react-icons/fi';
 
 export function DevDashboard() {
@@ -280,7 +281,9 @@ export function DevDashboard() {
           <div className="grid md:grid-cols-3 gap-4 text-sm">
             <div>
               <div className="font-medium text-gray-900 mb-1">📖 Documentation</div>
-              <p className="text-gray-600">All guides available at <a href="/dev/docs/readme" className="text-blue-600 hover:underline">/dev/docs</a></p>
+              <p className="text-gray-600">
+                All guides available at <Link href="/dev/docs/readme" className="text-blue-600 hover:underline">/dev/docs</Link>
+              </p>
             </div>
             <div>
               <div className="font-medium text-gray-900 mb-1">🔧 Commands</div>
@@ -288,7 +291,9 @@ export function DevDashboard() {
             </div>
             <div>
               <div className="font-medium text-gray-900 mb-1">🎯 Quick Start</div>
-              <p className="text-gray-600">Follow the <a href="/dev/setup" className="text-blue-600 hover:underline">interactive setup guide</a></p>
+              <p className="text-gray-600">
+                Follow the <Link href="/dev/setup" className="text-blue-600 hover:underline">interactive setup guide</Link>
+              </p>
             </div>
           </div>
         </div>

@@ -1,19 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button/Button'
 import { Input } from '@/components/ui/input/Input'
 import { Card, CardContent } from '@/components/ui/card/Card'
 import { useAuth } from '@/hooks/useAuth'
+import { DEFAULT_AUTHENTICATED_ROUTE, ROUTES, getSafeRedirectPath, withRedirect } from '@/config/routes'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const { resetPassword } = useAuth()
+  const redirectUrl = getSafeRedirectPath(searchParams.get('redirect'), DEFAULT_AUTHENTICATED_ROUTE)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +57,7 @@ export default function ForgotPasswordPage() {
               
               <div className="space-y-3">
                 <Button
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push(withRedirect(ROUTES.auth.login, redirectUrl))}
                   variant="primary"
                   className="w-full"
                 >
@@ -83,7 +86,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push(ROUTES.home)}
             className="text-base-content/70 hover:text-base-content text-sm cursor-pointer"
           >
             ← Back to home
@@ -131,7 +134,7 @@ export default function ForgotPasswordPage() {
               <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push(withRedirect(ROUTES.auth.login, redirectUrl))}
                   className="text-sm text-base-content/70 hover:text-base-content cursor-pointer"
                 >
                   Remember your password? Sign in

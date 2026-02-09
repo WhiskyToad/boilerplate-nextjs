@@ -5,17 +5,18 @@ import { Footer } from '@/features/landing/Footer'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { siteConfig } from '@/config/site-config'
+import { ROUTES } from '@/config/routes'
 
 export default function PrivacyPage() {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
 
   const handleSignIn = () => {
-    router.push('/login')
+    router.push(ROUTES.auth.login)
   }
 
   const handleGetStarted = () => {
-    router.push('/signup')
+    router.push(ROUTES.auth.signup)
   }
 
   const { legal } = siteConfig

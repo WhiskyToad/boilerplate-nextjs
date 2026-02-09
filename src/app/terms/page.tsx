@@ -5,17 +5,18 @@ import { Footer } from '@/features/landing/Footer'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { siteConfig } from '@/config/site-config'
+import { ROUTES } from '@/config/routes'
 
 export default function TermsPage() {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
 
   const handleSignIn = () => {
-    router.push('/login')
+    router.push(ROUTES.auth.login)
   }
 
   const handleGetStarted = () => {
-    router.push('/signup')
+    router.push(ROUTES.auth.signup)
   }
 
   const { legal } = siteConfig
@@ -99,7 +100,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-bold text-base-content mb-4">Privacy</h2>
               <p className="text-base-content/80">
                 Your privacy is important to us. Please review our{' '}
-                <a href="/privacy" className="link">Privacy Policy</a> to understand
+                <a href={ROUTES.privacy} className="link">Privacy Policy</a> to understand
                 how we collect and use your information.
               </p>
             </section>

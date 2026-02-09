@@ -1,7 +1,7 @@
 "use client";
 
 import { FiArrowRight } from "react-icons/fi";
-import { siteConfig } from '@/config/site-config';
+import { ROUTES } from '@/config/routes';
 
 export interface FinalCTASectionProps {
   onGetStarted: () => void;
@@ -29,7 +29,7 @@ export function FinalCTASection({ onGetStarted }: FinalCTASectionProps) {
               <FiArrowRight className="w-5 h-5" />
             </button>
             <a
-              href="/pricing"
+              href={ROUTES.pricing}
               className="btn btn-outline btn-lg"
             >
               View Pricing

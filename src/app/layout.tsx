@@ -27,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "SaaS Boilerplate - Build Your Next Project Faster",
   description:
-    "Production-ready Next.js SaaS boilerplate with authentication, payments, dashboards, and more. Build your MVP in days, not months.",
+    "Production-ready Next.js SaaS boilerplate with authentication, payments, and a clean app foundation. Build your MVP in days, not months.",
   keywords:
     "nextjs boilerplate, saas starter, react boilerplate, typescript, stripe integration, supabase auth, tailwind css",
   authors: [{ name: "SaaS Boilerplate" }],
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SaaS Boilerplate - Build Your Next Project Faster",
     description:
-      "Production-ready Next.js SaaS boilerplate with authentication, payments, dashboards, and more.",
+      "Production-ready Next.js SaaS boilerplate with authentication, payments, and a clean app foundation.",
     type: "website",
     siteName: "SaaS Boilerplate",
     images: ["/images/meta.jpg"],
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SaaS Boilerplate - Build Your Next Project Faster",
     description:
-      "Production-ready Next.js SaaS boilerplate with authentication, payments, dashboards, and more.",
+      "Production-ready Next.js SaaS boilerplate with authentication, payments, and a clean app foundation.",
     images: ["/images/meta.jpg"],
   },
   robots: {

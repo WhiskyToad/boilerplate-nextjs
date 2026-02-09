@@ -43,14 +43,14 @@ export function WelcomeEmailTemplate({
             <strong>Start collecting feedback</strong> - Watch insights roll in
           </li>
           <li style={{ marginBottom: '8px' }}>
-            <strong>Analyze and act</strong> - Use our dashboard to prioritize improvements
+            <strong>Analyze and act</strong> - Use your app workspace to prioritize improvements
           </li>
         </ul>
       </div>
       
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <a 
-          href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`}
+          href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/app`}
           style={{
             display: 'inline-block',
             backgroundColor: '#3b82f6',

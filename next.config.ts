@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Removed headers configuration to avoid conflicts with middleware and individual route handlers
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/app',
+        permanent: false,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

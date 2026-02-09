@@ -1,23 +1,29 @@
 'use client'
 
-import { useEffect, Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { SimpleAuth } from "@/features/auth/SimpleAuth"
+import { SimpleAuth } from '@/features/auth/SimpleAuth'
+import { AuthPageShell } from '@/features/auth/AuthPageShell'
 import { useAuth } from '@/hooks/useAuth'
+import { DEFAULT_AUTHENTICATED_ROUTE, ROUTES, getSafeRedirectPath, withRedirect } from '@/config/routes'
 
 function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading } = useAuth()
-  
-  const redirectUrl = searchParams.get('redirect') || '/dashboard'
+
+  const redirectUrl = getSafeRedirectPath(searchParams.get('redirect'), DEFAULT_AUTHENTICATED_ROUTE)
+  const messageParam = searchParams.get('message')
+  const infoMessage =
+    messageParam === 'invalid-reset-link'
+      ? 'That reset link is invalid or expired. Request a new one below.'
+      : messageParam
 
   useEffect(() => {
-    // If user is already logged in, redirect to intended destination
     if (!loading && user) {
       router.push(redirectUrl)
     }
-  }, [user, loading, router, redirectUrl])
+  }, [loading, redirectUrl, router, user])
 
   if (loading) {
     return (
@@ -28,49 +34,31 @@ function LoginPageContent() {
   }
 
   if (user) {
-    return null // Will redirect to dashboard
-  }
-
-  const handleToggleMode = () => {
-    router.push('/signup')
-  }
-
-  const handleForgotPassword = () => {
-    router.push('/auth/forgot-password')
-  }
-
-  const handleAuthSuccess = () => {
-    router.push(redirectUrl)
+    return null
   }
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <button
-            onClick={() => router.push('/')}
-            className="text-base-content/70 hover:text-base-content text-sm cursor-pointer"
-          >
-            ← Back to home
-          </button>
-        </div>
-        <SimpleAuth
-          mode="signin"
-          onToggleMode={handleToggleMode}
-          onSuccess={handleAuthSuccess}
-        />
-      </div>
-    </div>
+    <AuthPageShell mode="signin">
+      <SimpleAuth
+        mode="signin"
+        infoMessage={infoMessage}
+        onForgotPassword={() => router.push(withRedirect(ROUTES.auth.forgotPassword, redirectUrl))}
+        onToggleMode={() => router.push(withRedirect(ROUTES.auth.signup, redirectUrl))}
+        onSuccess={() => router.push(redirectUrl)}
+      />
+    </AuthPageShell>
   )
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <div className="loading loading-spinner loading-lg text-primary"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-base-100 flex items-center justify-center">
+          <div className="loading loading-spinner loading-lg text-primary"></div>
+        </div>
+      }
+    >
       <LoginPageContent />
     </Suspense>
   )

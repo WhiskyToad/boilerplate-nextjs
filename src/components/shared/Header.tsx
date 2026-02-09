@@ -7,6 +7,7 @@ import { FiMenu, FiX } from "react-icons/fi";
 import { Button } from "@/components/ui/button/Button";
 import { FeaturesDropdown } from "./FeaturesDropdown/FeaturesDropdown";
 import { siteConfig } from "@/config/site-config";
+import { ROUTES } from "@/config/routes";
 
 export interface HeaderProps {
   variant?: "landing" | "dashboard" | "docs";
@@ -144,14 +145,14 @@ export function Header({
       }
 
       if (user) {
-        // User is logged in - show dashboard link and account menu
+        // User is logged in - show app link and account menu
         return (
           <div className="flex items-center space-x-3">
             <Link
-              href="/dashboard"
+              href={ROUTES.app.home}
               className="hidden sm:flex items-center space-x-2 px-3 py-2 text-sm text-base-content/70 hover:text-base-content hover:bg-base-200 rounded-lg transition-colors"
             >
-              <span>Dashboard</span>
+              <span>App</span>
             </Link>
 
             <div className="dropdown dropdown-end">
@@ -203,7 +204,7 @@ export function Header({
                   <div className="divider my-1"></div>
                 </li>
                 <li>
-                  <Link href="/settings" className="flex items-center gap-2">
+                  <Link href={ROUTES.settings} className="flex items-center gap-2">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -410,13 +411,13 @@ export function Header({
           {isMenuOpen && variant === "landing" && (
             <div className="md:hidden border-t border-base-300/30 py-6 bg-base-50/50 backdrop-blur-sm">
               <div className="space-y-1">
-                <a
+                <Link
                   href="/#features"
                   className="block px-4 py-3 text-base-content/70 hover:text-primary hover:bg-primary/5 text-sm font-medium transition-all duration-200 rounded-lg mx-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Features
-                </a>
+                </Link>
                 {nav.map((item) => (
                   <a
                     key={item.name}

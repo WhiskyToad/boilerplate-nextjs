@@ -5,7 +5,7 @@ import { devtools } from 'zustand/middleware'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 import { posthog } from '@/lib/posthog'
-import { analytics } from '@/lib/analytics-service'
+import { ROUTES } from '@/config/routes'
 
 interface AuthState {
   user: User | null
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthStore>()(
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+            emailRedirectTo: `${window.location.origin}${ROUTES.auth.callback}?type=signup`,
             ...options
           }
         })
@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthStore>()(
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/auth/callback`
+            redirectTo: `${window.location.origin}${ROUTES.auth.callback}?next=${encodeURIComponent(ROUTES.app.home)}`
           }
         })
         return { error }
@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthStore>()(
 
       resetPassword: async (email) => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/reset-password`
+          redirectTo: `${window.location.origin}${ROUTES.auth.resetPassword}`
         })
         return { error }
       },

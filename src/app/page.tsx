@@ -1,23 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LandingPage } from "@/features/landing/LandingPage"
-import { SimpleAuth } from "@/features/auth/SimpleAuth"
+import { LandingPage } from '@/features/landing/LandingPage'
 import { useAuth } from '@/hooks/useAuth'
+import { ROUTES } from '@/config/routes'
 
 export default function Home() {
   const router = useRouter()
   const { user, loading } = useAuth()
-  const [showAuth, setShowAuth] = useState(false)
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
 
   useEffect(() => {
-    // If user is already logged in, redirect to dashboard
     if (!loading && user) {
-      router.push('/dashboard')
+      router.push(ROUTES.app.home)
     }
-  }, [user, loading, router])
+  }, [loading, router, user])
 
   if (loading) {
     return (
@@ -28,55 +25,13 @@ export default function Home() {
   }
 
   if (user) {
-    return null // Will redirect to dashboard
-  }
-
-  const handleSignIn = () => {
-    setAuthMode('signin')
-    setShowAuth(true)
-  }
-
-  const handleGetStarted = () => {
-    setAuthMode('signup')
-    setShowAuth(true)
-  }
-
-  const handleToggleMode = () => {
-    setAuthMode(authMode === 'signin' ? 'signup' : 'signin')
-  }
-
-  const handleAuthSuccess = () => {
-    router.push('/dashboard')
-  }
-
-  if (showAuth) {
-    return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <button
-              onClick={() => setShowAuth(false)}
-              className="text-base-content/70 hover:text-base-content text-sm cursor-pointer"
-            >
-              ← Back to home
-            </button>
-          </div>
-          <SimpleAuth
-            mode={authMode}
-            onToggleMode={handleToggleMode}
-            onSuccess={handleAuthSuccess}
-          />
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
-    <>
-      <LandingPage 
-        onSignIn={handleSignIn}
-        onGetStarted={handleGetStarted}
-      />
-    </>
+    <LandingPage
+      onSignIn={() => router.push(ROUTES.auth.login)}
+      onGetStarted={() => router.push(ROUTES.auth.signup)}
+    />
   )
 }

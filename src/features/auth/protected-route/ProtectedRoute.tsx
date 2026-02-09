@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, ReactNode } from 'react'
+import { ROUTES } from '@/config/routes'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -12,7 +13,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ 
   children, 
-  redirectTo = '/auth/login',
+  redirectTo = ROUTES.auth.login,
   fallback = <div className="flex justify-center items-center min-h-screen"><span className="loading loading-spinner loading-lg"></span></div>
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth()

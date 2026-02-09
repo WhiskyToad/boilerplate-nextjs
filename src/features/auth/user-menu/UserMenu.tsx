@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import Link from 'next/link'
+import { ROUTES } from '@/config/routes'
 
 interface UserMenuProps {
   className?: string
@@ -34,14 +36,10 @@ export function UserMenu({ className = '' }: UserMenuProps) {
           <span>{user.email}</span>
         </li>
         <li>
-          <a href="/profile">
-            Profile
-          </a>
+          <Link href={ROUTES.app.home}>App Home</Link>
         </li>
         <li>
-          <a href="/settings">
-            Settings
-          </a>
+          <Link href={ROUTES.settings}>Settings</Link>
         </li>
         <li>
           <button

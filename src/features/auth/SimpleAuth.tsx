@@ -1,32 +1,43 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button/Button'
 import { Input } from '@/components/ui/input/Input'
 import { Card, CardContent } from '@/components/ui/card/Card'
 import { useAuth } from '@/hooks/useAuth'
+import { ROUTES } from '@/config/routes'
 
 export interface SimpleAuthProps {
   mode: 'signin' | 'signup'
   onToggleMode: () => void
   onSuccess?: () => void
+  onForgotPassword?: () => void
+  infoMessage?: string | null
 }
 
-export function SimpleAuth({ mode, onToggleMode, onSuccess }: SimpleAuthProps) {
+export function SimpleAuth({
+  mode,
+  onToggleMode,
+  onSuccess,
+  onForgotPassword,
+  infoMessage,
+}: SimpleAuthProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [signupSuccessEmail, setSignupSuccessEmail] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
+  const [agreePrivacy, setAgreePrivacy] = useState(false)
   const { signIn, signUp, signInWithGoogle } = useAuth()
 
-  // Password validation
   const passwordCriteria = {
     minLength: password.length >= 8,
     hasUppercase: /[A-Z]/.test(password),
     hasLowercase: /[a-z]/.test(password),
     hasNumber: /\d/.test(password),
-    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password)
   }
 
   const isPasswordValid = Object.values(passwordCriteria).every(Boolean)
@@ -36,33 +47,40 @@ export function SimpleAuth({ mode, onToggleMode, onSuccess }: SimpleAuthProps) {
     setLoading(true)
     setError(null)
 
-    // For signup, validate password criteria
-    if (mode === 'signup' && !isPasswordValid) {
-      setError('Please meet all password requirements')
-      setLoading(false)
-      return
+    if (mode === 'signup') {
+      if (!isPasswordValid) {
+        setError('Please use at least 8 characters with upper, lower, and a number.')
+        setLoading(false)
+        return
+      }
+
+      if (!agreeTerms || !agreePrivacy) {
+        setError('You must accept the Terms and Privacy Policy to create an account.')
+        setLoading(false)
+        return
+      }
     }
 
     try {
-      let result
       if (mode === 'signup') {
-        result = await signUp(email, password)
-        if (!result.error) {
-          // Show success message for signup
-          setError('Check your email for confirmation link!')
+        const result = await signUp(email, password)
+        if (result.error) {
+          throw result.error
         }
-      } else {
-        result = await signIn(email, password)
-        if (!result.error) {
-          onSuccess?.()
-        }
+
+        setSignupSuccessEmail(email)
+        setPassword('')
+        return
       }
-      
+
+      const result = await signIn(email, password)
       if (result.error) {
         throw result.error
       }
-    } catch (error: any) {
-      setError(error.message)
+
+      onSuccess?.()
+    } catch (authError: any) {
+      setError(authError.message)
     } finally {
       setLoading(false)
     }
@@ -74,148 +92,123 @@ export function SimpleAuth({ mode, onToggleMode, onSuccess }: SimpleAuthProps) {
 
     try {
       const result = await signInWithGoogle()
-
       if (result.error) {
         throw result.error
       }
-      // Don't set loading to false here - user will be redirected
-    } catch (error: any) {
-      setError(error.message)
+    } catch (authError: any) {
+      setError(authError.message)
       setLoading(false)
     }
   }
 
-  return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold text-center mb-6">
-              {mode === 'signin' ? 'Sign In' : 'Get Started'}
-            </h2>
-          </div>
+  if (signupSuccessEmail && mode === 'signup') {
+    return (
+      <Card className="w-full max-w-xl mx-auto border border-base-300/70" variant="elevated">
+        <CardContent className="p-8 text-center space-y-4">
+          <h2 className="text-2xl font-bold text-base-content">Check your inbox</h2>
+          <p className="text-sm text-base-content/70">
+            We sent a confirmation link to <span className="font-medium text-base-content">{signupSuccessEmail}</span>.
+          </p>
+          <p className="text-sm text-base-content/70">
+            Open the link in your email to verify your account, then sign in.
+          </p>
+          <Button variant="outline" className="w-full" onClick={onToggleMode}>
+            Back to sign in
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 
-          <div>
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+  return (
+    <Card className="w-full max-w-xl mx-auto border border-base-300/70" variant="elevated">
+      <CardContent className="p-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-base-content">
+            {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
+          </h2>
+          <p className="mt-2 text-sm text-base-content/70">
+            {mode === 'signin'
+              ? 'Pick up where you left off.'
+              : 'Start from a secure baseline and build your product fast.'}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="email"
+            label="Email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+            disabled={loading}
+          />
 
           <div>
             <div className="relative">
               <Input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
+                label="Password"
+                placeholder={mode === 'signin' ? 'Enter your password' : 'Create a password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
-                minLength={mode === 'signup' ? 8 : 6}
+                minLength={8}
                 className="pr-12"
+                disabled={loading}
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-base-content/50 hover:text-base-content/70 cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-9 text-xs text-base-content/60 hover:text-base-content"
               >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
-            
-            {/* Password criteria - only show for signup and when password is being typed */}
+
             {mode === 'signup' && password.length > 0 && (
-              <div className="mt-3 p-3 bg-base-200/50 rounded-lg">
-                <p className="text-sm font-medium text-base-content/80 mb-2">Password must contain:</p>
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${passwordCriteria.minLength ? 'bg-success' : 'bg-base-300'}`}>
-                      {passwordCriteria.minLength && (
-                        <svg className="w-2.5 h-2.5 text-success-content" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className={`text-xs ${passwordCriteria.minLength ? 'text-success' : 'text-base-content/60'}`}>
-                      At least 8 characters
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${passwordCriteria.hasUppercase ? 'bg-success' : 'bg-base-300'}`}>
-                      {passwordCriteria.hasUppercase && (
-                        <svg className="w-2.5 h-2.5 text-success-content" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className={`text-xs ${passwordCriteria.hasUppercase ? 'text-success' : 'text-base-content/60'}`}>
-                      One uppercase letter
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${passwordCriteria.hasLowercase ? 'bg-success' : 'bg-base-300'}`}>
-                      {passwordCriteria.hasLowercase && (
-                        <svg className="w-2.5 h-2.5 text-success-content" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className={`text-xs ${passwordCriteria.hasLowercase ? 'text-success' : 'text-base-content/60'}`}>
-                      One lowercase letter
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${passwordCriteria.hasNumber ? 'bg-success' : 'bg-base-300'}`}>
-                      {passwordCriteria.hasNumber && (
-                        <svg className="w-2.5 h-2.5 text-success-content" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className={`text-xs ${passwordCriteria.hasNumber ? 'text-success' : 'text-base-content/60'}`}>
-                      One number
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${passwordCriteria.hasSpecialChar ? 'bg-success' : 'bg-base-300'}`}>
-                      {passwordCriteria.hasSpecialChar && (
-                        <svg className="w-2.5 h-2.5 text-success-content" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className={`text-xs ${passwordCriteria.hasSpecialChar ? 'text-success' : 'text-base-content/60'}`}>
-                      One special character (!@#$%^&*)
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <p className="mt-2 text-xs text-base-content/60">
+                Must include 8+ chars, uppercase, lowercase, and a number.
+              </p>
             )}
           </div>
 
-          {error && (
-            <div className={`text-sm p-3 rounded-lg ${
-              error.includes('Check your email') 
-                ? 'bg-success/10 text-success' 
-                : 'bg-error/10 text-error'
-            }`}>
-              {error}
+          {mode === 'signup' && (
+            <div className="space-y-2 rounded-lg border border-base-300/80 bg-base-200/40 p-3 text-sm text-base-content/80">
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm checkbox-primary mt-0.5"
+                  checked={agreeTerms}
+                  onChange={(event) => setAgreeTerms(event.target.checked)}
+                  disabled={loading}
+                />
+                <span>
+                  I agree to the <Link href={ROUTES.terms} className="link">Terms of Service</Link>
+                </span>
+              </label>
+              <label className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm checkbox-primary mt-0.5"
+                  checked={agreePrivacy}
+                  onChange={(event) => setAgreePrivacy(event.target.checked)}
+                  disabled={loading}
+                />
+                <span>
+                  I agree to the <Link href={ROUTES.privacy} className="link">Privacy Policy</Link>
+                </span>
+              </label>
             </div>
+          )}
+
+          {infoMessage && (
+            <div className="rounded-lg bg-info/10 p-3 text-sm text-info">{infoMessage}</div>
+          )}
+
+          {error && (
+            <div className="rounded-lg bg-error/10 p-3 text-sm text-error">{error}</div>
           )}
 
           <Button
@@ -223,14 +216,15 @@ export function SimpleAuth({ mode, onToggleMode, onSuccess }: SimpleAuthProps) {
             variant="primary"
             size="lg"
             className="w-full"
-            disabled={loading || (mode === 'signup' && password.length > 0 && !isPasswordValid)}
+            loading={loading}
+            loadingText={mode === 'signin' ? 'Signing in...' : 'Creating account...'}
+            disabled={mode === 'signup' && password.length > 0 && !isPasswordValid}
           >
-            {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+            {mode === 'signin' ? 'Sign In' : 'Create Account'}
           </Button>
 
           <div className="divider text-xs text-base-content/50">or</div>
 
-          {/* Google OAuth */}
           <Button
             type="button"
             onClick={handleGoogleSignIn}
@@ -239,36 +233,23 @@ export function SimpleAuth({ mode, onToggleMode, onSuccess }: SimpleAuthProps) {
             size="lg"
             className="w-full"
           >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
             Continue with Google
           </Button>
 
-          <div className="text-center space-y-2">
+          <div className="space-y-2 pt-2 text-center">
             <button
               type="button"
               onClick={onToggleMode}
-              className="text-sm text-base-content/70 hover:text-base-content cursor-pointer block"
+              className="text-sm text-base-content/70 hover:text-base-content"
             >
-              {mode === 'signin' 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
+              {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
-            
+
             {mode === 'signin' && (
               <button
                 type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.location.href = '/auth/forgot-password'
-                  }
-                }}
-                className="text-sm text-base-content/70 hover:text-base-content cursor-pointer block"
+                onClick={onForgotPassword}
+                className="block w-full text-sm text-base-content/70 hover:text-base-content"
               >
                 Forgot your password?
               </button>

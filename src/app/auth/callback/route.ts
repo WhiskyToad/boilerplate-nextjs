@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { ROUTES, getSafeRedirectPath } from '@/config/routes'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/auth/confirmed'
+  const next = getSafeRedirectPath(searchParams.get('next'), ROUTES.app.home)
   const type = searchParams.get('type')
 
   if (code) {
@@ -17,10 +18,7 @@ export async function GET(request: NextRequest) {
       // Determine redirect URL based on auth type
       let redirectUrl = next
       if (type === 'signup' || type === 'email') {
-        redirectUrl = '/auth/confirmed'
-      } else if (next === '/auth/confirmed') {
-        // Default to dashboard for OAuth logins
-        redirectUrl = '/dashboard'
+        redirectUrl = ROUTES.auth.confirmed
       }
       
       if (isLocalEnv) {
@@ -35,5 +33,5 @@ export async function GET(request: NextRequest) {
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return NextResponse.redirect(`${origin}${ROUTES.auth.authCodeError}`)
 }
