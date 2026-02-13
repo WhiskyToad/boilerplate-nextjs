@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button/Button'
 import { Input } from '@/components/ui/input/Input'
@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card/Card'
 import { useAuth } from '@/hooks/useAuth'
 import { DEFAULT_AUTHENTICATED_ROUTE, ROUTES, getSafeRedirectPath, withRedirect } from '@/config/routes'
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -145,5 +145,13 @@ export default function ForgotPasswordPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordInner />
+    </Suspense>
   )
 }

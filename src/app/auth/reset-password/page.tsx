@@ -43,7 +43,10 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const { supabase } = await import('@/lib/supabase/client')
+      const { getSupabaseBrowserClient } = await import('@/lib/supabase/client')
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) throw new Error('Supabase is not configured (missing env vars)')
+
       const { error } = await supabase.auth.updateUser({
         password: password
       })

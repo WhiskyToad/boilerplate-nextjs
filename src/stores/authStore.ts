@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { posthog } from '@/lib/posthog'
 import { ROUTES } from '@/config/routes'
 
@@ -45,6 +45,9 @@ export const useAuthStore = create<AuthStore>()(
       setInitialized: (initialized) => set({ initialized }, false, 'setInitialized'),
 
       signUp: async (email, password, options) => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return { error: { message: 'Supabase is not configured (missing env vars)' } as any }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -57,6 +60,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       signIn: async (email, password) => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return { error: { message: 'Supabase is not configured (missing env vars)' } as any }
+
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -65,6 +71,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       signInWithGoogle: async () => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return { error: { message: 'Supabase is not configured (missing env vars)' } as any }
+
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -75,11 +84,17 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       signOut: async () => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return { error: { message: 'Supabase is not configured (missing env vars)' } as any }
+
         const { error } = await supabase.auth.signOut()
         return { error }
       },
 
       resetPassword: async (email) => {
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) return { error: { message: 'Supabase is not configured (missing env vars)' } as any }
+
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}${ROUTES.auth.resetPassword}`
         })
@@ -88,6 +103,14 @@ export const useAuthStore = create<AuthStore>()(
 
       initialize: async () => {
         const { setUser, setSession, setLoading, setInitialized } = get()
+
+        const supabase = getSupabaseBrowserClient()
+        if (!supabase) {
+          console.warn('Supabase is not configured (missing env vars). Auth will be disabled.')
+          setLoading(false)
+          setInitialized(true)
+          return
+        }
         
         try {
           // Get initial session

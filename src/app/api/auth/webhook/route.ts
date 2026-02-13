@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { siteConfig } from '@/config/site-config'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json()
@@ -65,6 +63,8 @@ export async function POST(request: NextRequest) {
         </div>
       </div>
     `;
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
     // Send welcome email
     const { data, error } = await resend.emails.send({
